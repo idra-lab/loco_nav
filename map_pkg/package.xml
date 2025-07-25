@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>map_pkg</name>
+  <version>2.0.0</version>
+  <description>Package to publish details regarding the map</description>
+
+  <maintainer email="enrico.saccon@unitn.it">enrico</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>gazebo_ros</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>gazebo_ros</exec_depend>
+  
+    <build_depend>obstacles_msgs</build_depend>
+  <exec_depend>obstacles_msgs</exec_depend>
+ 
+  <exec_depend>turtlebot3_description</exec_depend>
+  <exec_depend>turtlebot3_navigation</exec_depend>
+   <exec_depend>turtlebot3_gazebo</exec_depend>
+ 
+    <depend>gazebo_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
+  
+  
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+</package>
+
+
