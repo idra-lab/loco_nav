@@ -12,7 +12,8 @@ import numpy as np
 from geometry_msgs.msg import Polygon, Point32
 from obstacles_msgs.msg import ObstacleArrayMsg
 from termcolor import colored
-
+import subprocess
+import rospkg
 class CreateMap:
     def __init__(self):
         self.padding = 5
@@ -25,6 +26,12 @@ class CreateMap:
 
         rospy.loginfo("Create map node started!")
         rospy.Subscriber("map_borders", Polygon, self.listen_borders, queue_size=1)
+
+        if os.path.exists(os.path.join(self.maps_dir, "dynamic_map.yaml")):
+            os.remove(os.path.join(self.maps_dir, "dynamic_map.yaml"))
+        if os.path.exists(os.path.join(self.maps_dir, "dynamic_map.png")):
+            os.remove(os.path.join(self.maps_dir, "dynamic_map.png"))
+
 
     def __create_map(self, msg):
         self.max_x = math.ceil(max(p.x for p in msg.points))
@@ -62,9 +69,9 @@ class CreateMap:
         cv2.imwrite(os.path.join(self.maps_dir, "dynamic_map.png"), self.img)
         cv2.imwrite(os.path.join(self.maps_dir, "dynamic_map.pgm"), self.img)
 
-        rospy.loginfo("Initial map borders drawn. Waiting for obstacles...")
-
-        rospy.Subscriber("obstacles", ObstacleArrayMsg, self.listen_obstacles, queue_size=1)
+        #rospy.loginfo("Initial map borders drawn. Waiting for obstacles...")
+        print(colored("create_map_pgm.py: Initial map borders drawn. Waiting for obstacles","blue"))
+        rospy.Subscriber("/obstacles", ObstacleArrayMsg, self.listen_obstacles, queue_size=1)
 
     def listen_obstacles(self, msg):
         if self.obstacles_done:
@@ -78,6 +85,8 @@ class CreateMap:
                 # Cylinder obstacle
                 radius = obs.radius
                 center = obs.polygon.points[0]
+                print("X: ", center.x)
+                print("Y: ",center.y)
                 pts_tmp = [[
                     center.x + radius * np.cos(theta),
                     center.y + radius * np.sin(theta)
@@ -107,9 +116,15 @@ class CreateMap:
 
         with open(yaml_path, "w") as f:
             yaml.dump(yaml_data, f)
-        print(colored(f"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "red"))
-        rospy.loginfo(f"Map and YAML saved to: {self.maps_dir}")
-        rospy.signal_shutdown("Map creation complete.")
+        print(colored(f"create_map_pgm.py:  Map and YAML saved to: {self.maps_dir}", "red"))
+        #rospy.loginfo(f"Map and YAML saved to: {self.maps_dir}")
+
+        #commented to keep it alive for map server
+        #rospy.signal_shutdown("Map creation complete.")
+
+        # start mapserver
+        map_file = os.path.join(rospkg.RosPack().get_path("map_pkg"), "maps", "dynamic_map.yaml")
+        subprocess.Popen(["rosrun", "map_server", "map_server", map_file])
 
 
 def main():

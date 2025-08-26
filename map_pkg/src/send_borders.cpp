@@ -1,110 +1,120 @@
-
+// -*- coding: utf-8 -*-
 #include <ros/ros.h>
-#include <geometry_msgs/Point32.h>
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <geometry_msgs/PoseArray.h>
-#include <std_msgs/Header.h>
-#include "obstacles_msgs/ObstacleArrayMsg.h"
-#include "obstacles_msgs/ObstacleMsg.h"
-#include "map_pkg/utilities.hpp"
 
-#include <iostream>
+#include "geometry_msgs/Point32.h"
+#include "geometry_msgs/Polygon.h"
+#include "geometry_msgs/PolygonStamped.h"
+#include "geometry_msgs/Pose.h"
+#include "std_msgs/Header.h"
+
+#include <chrono>
 #include <fstream>
-#include <sstream>
-#include <random>
+#include <functional>
+#include <iostream>
+#include <memory>
 #include <string>
 #include <unistd.h>
 
-class Sendborders
+#include "map_pkg/utilities.hpp"
+
+/**
+ * @brief This node publishes the borders of the map.
+ * It mirrors the ROS2 node’s parameters and topics using ROS1.
+ */
+class BordersPublisher
 {
+private:
+  ros::NodeHandle nh_;  // private (~) namespace
+  ros::Publisher pub_map_borders_;      // /map_borders (Polygon)
+  ros::Publisher pub_borders_stamped_;  // /borders (PolygonStamped)
+
+  struct Data {
+    std::string map_name;
+    double dx;
+    double dy;
+  } data;
+
 public:
+  explicit BordersPublisher() : nh_("~")
+  {
+    ROS_INFO("Node created.");
+    // Use latched publishers to emulate ROS2 QoS KeepLast(1) durability for static data
+    pub_map_borders_     = nh_.advertise<geometry_msgs::Polygon>("/map_borders", 1, /*latch=*/true);
+    pub_borders_stamped_ = nh_.advertise<geometry_msgs::PolygonStamped>("/borders", 1, /*latch=*/true);
+  }
 
-
-
-    Sendborders(ros::NodeHandle &nh)
-    {
-    
+  bool configure()
+  {
     ROS_INFO("Configuring node.");
+     // Wait until the parameter exists
+     while (!nh_.hasParam("/_/ros__parameters/map")) {
+        ros::Duration(0.1).sleep();  // 100 ms
+     }
 
-    // Declare/read parameters
-    nh.param<std::string>("map", data.map_name, "hexagon");
-    nh.param<double>("dx", data.dx, 5.0);
-    nh.param<double>("dy", data.dy, 5.0);
+    nh_.param<std::string>("/_/ros__parameters/map", data.map_name, std::string("hexagon"));
+    nh_.param("/_/ros__parameters/dx", data.dx, 5.0);
+    nh_.param("/_/ros__parameters/dy", data.dy, 5.0);
 
-    if (data.map_name != "hexagon" && data.map_name != "rectangle")
-    {
+    if (data.map_name != "hexagon" && data.map_name != "rectangle") {
       ROS_ERROR("Map name %s not recognized", data.map_name.c_str());
-      ros::shutdown();  // Or handle error differently
-      return;
+      return false;
     }
 
     ROS_INFO("Map name: %s", data.map_name.c_str());
     ROS_INFO("dx: %f", data.dx);
     ROS_INFO("dy: %f", data.dy);
 
- 
-   
-        pub_ = nh.advertise<geometry_msgs::Polygon>("/map_borders", 10);
-        pub_stamped_ = nh.advertise<geometry_msgs::PolygonStamped>("/borders", 10);
- 
-        timer_ = nh.createTimer(ros::Duration(1.0), &Sendborders::timerCallback, this);
-    ROS_INFO("Sendborders Node configured.");
- 
+    ROS_INFO("Node configured.");
+    return true;
+  }
+
+  bool activate()
+  {
+    ROS_INFO("Activating node.");
+
+    std_msgs::Header hh;
+    hh.stamp = ros::Time::now();
+    hh.frame_id = "map";
+
+    geometry_msgs::Polygon pol;
+
+    if (data.map_name == "hexagon") {
+      pol = create_hexagon(data.dx);
+    } else if (data.map_name == "rectangle") {
+      pol = create_rectangle(data.dx, data.dy);
+    } else {
+      ROS_ERROR("Map name %s not recognized", data.map_name.c_str());
+      return false;
     }
 
-private:
-    ros::Publisher pub_;
-    ros::Publisher pub_stamped_;      
-    ros::Timer timer_;
-   
-    geometry_msgs::Polygon  pol;
     geometry_msgs::PolygonStamped pol_stamped;
+    pol_stamped.header = hh;
+    pol_stamped.polygon = pol;
 
+    // Publish borders
+    pub_map_borders_.publish(pol);
+    pub_borders_stamped_.publish(pol_stamped);
 
-    
-    // Data obtained from parameters
-	struct Data {
-	std::string map_name;
-	double dx;
-	double dy;
-	} data;
-
-    void timerCallback(const ros::TimerEvent &)
-    {
-      
-
-        
-  
-
-      if (this->data.map_name == "hexagon") {
-        pol = create_hexagon(this->data.dx);
-      } else if (this->data.map_name == "rectangle") {
-        pol = create_rectangle(this->data.dx, this->data.dy);
-      } else {
-        ROS_ERROR( "Map name %s not recognized",
-	           this->data.map_name.c_str());
-      }
-        
-        
-      pol_stamped.header.stamp = ros::Time::now();
-      pol_stamped.header.frame_id = "map";
-      pol_stamped.polygon = pol;
-
-      // Publish borders
-      this->pub_.publish(pol);
-      this->pub_stamped_.publish(pol_stamped);
-
-        
-      ROS_INFO("Published borders 1");
-    }
+    ROS_INFO("Node active.");
+    return true;
+  }
 };
 
-int main(int argc, char *argv[])
+
+int main(int argc, char* argv[])
 {
-    ros::init(argc, argv, "send_borders");
-    ros::NodeHandle nh;
-    Sendborders node(nh);
-    ros::spin();
-    return 0;
+  ros::init(argc, argv, "send_borders");
+  BordersPublisher node;
+
+  if (!node.configure()) {
+    ROS_FATAL("Configuration failed.");
+    return 1;
+  }
+  if (!node.activate()) {
+    ROS_FATAL("Activation failed.");
+    return 1;
+  }
+
+  ros::spin();
+  return 0;
 }

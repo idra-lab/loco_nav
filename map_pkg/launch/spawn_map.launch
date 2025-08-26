@@ -7,42 +7,40 @@
   <arg name="gen_map_params_file" default="$(find map_pkg)/config/full_config.yaml" />
   <arg name="victims_activated" default="false" />
 
+
+
   <!-- Send Borders -->
   <node pkg="map_pkg" type="send_borders" name="send_borders" output="screen">
-    <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+
   </node>
 
   <!-- Send Gates -->
   <node pkg="map_pkg" type="send_gates" name="send_gates" output="screen">
-    <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+
   </node>
 
   <!-- Send Obstacles -->
   <node pkg="map_pkg" type="send_obstacles" name="send_obstacles" output="screen">
-    <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+
   </node>
 
   <!-- Send Victims (only if activated) -->
   <group if="$(arg victims_activated)">
     <node pkg="map_pkg" type="send_victims" name="send_victims" output="screen">
-      <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+
     </node>
 
     <!-- Send Timeout Node -->
     <node pkg="map_pkg" type="send_timeout" name="send_timeout" output="screen">
-      <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+
     </node>
   </group>
   
-  
+ <!-- spawn in gazebo-->
 
-<node pkg="map_pkg"
-type="spawn_borders.py"
-name="spawn_borders"
-output="screen" >
+<node pkg="map_pkg" type="spawn_borders.py"  name="spawn_borders" output="screen" >
 <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
-<param name="gazebo_models_path" value="$(arg gazebo_models_path)" />
- </node>
+<param name="gazebo_models_path" value="$(arg gazebo_models_path)" />  </node>
 
 
 <node pkg="map_pkg"
@@ -54,12 +52,9 @@ output="screen">
  </node>
 
 
-<node pkg="map_pkg"
-type="spawn_gates.py"
-name="spawn_gates"
-output="screen">
-<param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
-<param name="elements_models_path" value="$(arg elements_models_path)" />
+<node pkg="map_pkg" type="spawn_gates.py"  name="spawn_gates" output="screen">
+    <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+    <param name="elements_models_path" value="$(arg elements_models_path)" />
  </node>
         
   

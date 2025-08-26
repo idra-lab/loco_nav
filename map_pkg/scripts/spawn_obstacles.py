@@ -1,59 +1,102 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import os
+import os, yaml, random
+import numpy as np
+from pathlib import Path
+import subprocess
 import rospy
-import yaml
+
 from geo_utility import *
+from spawn_borders import get_borders_points
 
-
-from gazebo_msgs.srv import SpawnModel
-from geometry_msgs.msg import Pose, Point, Quaternion
-
-def load_yaml(path):
-    parmas_file = None
-    while not os.path.isfile(path) and parmas_file is None:
-        with open(path, 'r') as file:
-            parmas_file = yaml.load(file, Loader=yaml.FullLoader)
-    return parmas_file
 
 def spawn_obstacles():
-    rospy.init_node('spawn_obstacles')
+    # In ROS1 we fetch what ROS2 put in context.launch_configurations via ROS params.
+    while  not rospy.has_param('/generate_config_file/gen_map_params_file'):
+        rospy.sleep(0.1)
+    gen_map_params_file = rospy.get_param('/generate_config_file/gen_map_params_file')
 
-    param_file = rospy.get_param('~gen_map_params_file')
-    models_path = rospy.get_param('~elements_models_path')
+    while not rospy.has_param('/spawn_obstacles/elements_models_path'):
+        rospy.sleep(0.1)
+    elements_models_path = rospy.get_param('/spawn_obstacles/elements_models_path')
 
-    params = load_yaml(param_file)
-    obstacles = params["/**/send_obstacles"]['ros__parameters']
+    while not os.path.exists(gen_map_params_file):
+        rospy.sleep(0.1)
+    with open(gen_map_params_file, 'r') as file:
+        params = yaml.load(file, Loader=yaml.FullLoader)
+        obstacles = params["/_/send_obstacles"]['ros__parameters']
 
-    # Load model paths
-    box_model_path = os.path.join(models_path, 'box', 'model.sdf')
-    cylinder_model_path = os.path.join(models_path, 'cylinder', 'model.sdf')
+    box_model_path = os.path.join(elements_models_path, 'box', 'model.sdf')
+    cylinder_model_path = os.path.join(elements_models_path, 'cylinder', 'model.sdf')
 
-    # Ensure vectors are the same length
-    N = len(obstacles['vect_x'])
-    assert all(len(obstacles[k]) == N for k in ['vect_y', 'vect_yaw', 'vect_type', 'vect_dim_x', 'vect_dim_y'])
+    # Check that all vectors have the same number of obstacles
+    assert len(obstacles['vect_x']) == len(obstacles['vect_y']) == \
+           len(obstacles['vect_yaw']) == len(obstacles["vect_type"]) == \
+           len(obstacles['vect_dim_x']) == len(obstacles["vect_dim_y"]), \
+        "The number of obstacles in the conf file is wrong. The script for generating the configuration made a mistake."
 
-    # Wait for the service
-    rospy.wait_for_service('/gazebo/spawn_sdf_model')
-    spawn_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
+    commands = []
+    for obs in range(len(obstacles['vect_x'])):
+        # If x and y are 0, then the gate is random
 
-    for i in range(N):
-        # Prepare model data
-        model_path = box_model_path if obstacles['vect_type'][i] == 0 else cylinder_model_path
-        with open(model_path, 'r') as f:
-            model_xml = f.read()
+        if obstacles['vect_type'][obs] == "box":
+            obs_polygon = rectangle(obstacles['vect_x'][obs], obstacles['vect_y'][obs],
+                                    obstacles['vect_dim_x'][obs], obstacles['vect_dim_y'][obs],
+                                    obstacles['vect_yaw'][obs])
+            with open(box_model_path, 'r') as in_file:
+                obs_model = in_file.read().replace(
+                    "<size>1 1 1</size>",
+                    f"<size>{obstacles['vect_dim_x'][obs]} {obstacles['vect_dim_y'][obs]} 1</size>"
+                )
 
-        pose = Pose(
-            position=Point(obstacles['vect_x'][i], obstacles['vect_y'][i], 0),
-            orientation=quaternion_from_yaw(obstacles['vect_yaw'][i])
-        )
+        elif obstacles['vect_type'][obs] == "cylinder":
+            obs_polygon = circle(obstacles['vect_x'][obs], obstacles['vect_y'][obs],
+                                 obstacles['vect_dim_x'][obs])
+            with open(cylinder_model_path, 'r') as in_file:
+                obs_model = in_file.read().replace(
+                    "<radius>0.5</radius>",
+                    f"<radius>{obstacles['vect_dim_x'][obs]}</radius>"
+                )
+        else:
+            raise Exception(f"The obstacle type {obstacles['vect_type'][obs]} is not supported")
+        center = [obs_polygon.centroid.x, obs_polygon.centroid.y]
+        #center = [centroid(obs_polygon).coords[0][0], centroid(obs_polygon).coords[0][1]]
+        print("Spawning obstacle in ", center, abs(center[0]), abs(center[1]))
+        if abs(center[0]) < 1e-8:
+            center[0] = 0
+        if abs(center[1]) < 1e-8:
+            center[1] = 0
 
-        model_name = f"obstacle_{i}"
-        spawn_model(model_name, model_xml, "", pose, "world")
+        # Write temporary SDF like in ROS2 version
+        with open(f"obs{obs}_tmp.sdf", 'w') as out_file:
+            out_file.write(obs_model)
+            path = Path(out_file.name).resolve()
 
-if __name__ == '__main__':
-    try:
-        spawn_obstacles()
-    except rospy.ROSInterruptException:
-        pass
+        # ROS1 equivalent of ROS2 spawn_entity.py:
+        # rosrun gazebo_ros spawn_model -file <path> -sdf -model obstacles<obs> -x <x> -y <y> -z 0.0001 -Y <yaw>
+        cmd = [
+            'rosrun', 'gazebo_ros', 'spawn_model',
+            '-file', str(path),
+            '-sdf',
+            '-model', f'obstacles{obs}',
+            '-x', str(center[0]),
+            '-y', str(center[1]),
+            '-z', str(0.0001),
+            '-Y', str(obstacles["vect_yaw"][obs])
+        ]
 
+        # Execute immediately (like launching the Node in ROS2)
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as e:
+            rospy.logerr(f"Failed to spawn obstacle {obs}: {e}")
+
+        commands.append(cmd)
+
+    return commands
+
+
+if __name__ == "__main__":
+    rospy.init_node('spawn_obstacles_ros1_wrapper')
+    spawn_obstacles()

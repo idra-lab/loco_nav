@@ -2,8 +2,7 @@
 <launch>
 
   <!-- Parameters -->
-<arg name="model" default="burger"/>
-  <env name="TURTLEBOT3_MODEL" value="$(arg model)"/>
+  <arg name="model" default="burger"/>
   <arg name="use_sim_time" default="true" />
   <arg name="shelfino_name" default="turtlebot3_burger" />
   <arg name="use_gui" default="true" />
@@ -14,7 +13,7 @@
   <arg name="shelfino_init_x" default="0.0" />
   <arg name="shelfino_init_y" default="0.0" />
   <arg name="shelfino_init_yaw" default="0.0" />
-  <arg name="map_file" default="$(find map_pkg)/maps/dynamic_map.yaml" />
+
   <!--arg name="nav_param_file" default="$(find shelfino_navigation)/config/shelfino.yaml" /-->
   <arg name="nav_rviz_config_file" default="$(find map_pkg)/rviz/shelfino_nav.rviz" />
   <arg name="map_env_params_file" default="$(find map_pkg)/config/map_config.yaml" />
@@ -23,8 +22,7 @@
   <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
   
   
-  
-  <arg name="victims_activated" default="true" />
+   <arg name="victims_activated" default="true" />
   <arg name="generate_new_map_config" default="true" />
 
   <arg name="x_pos" default="-2.0"/>
@@ -35,7 +33,9 @@
   <!-- Set parameters -->
   <param name="use_sim_time" value="$(arg use_sim_time)" />
 
-  <!-- Generate the config file -->
+
+
+  <!-- Generate the config file  and load params into param server-->
   <node pkg="map_pkg" type="generate_config_file.py" name="generate_config_file" output="screen">
     <param name="map_env_params_file" value="$(arg map_env_params_file)" />
     <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
@@ -43,8 +43,12 @@
     <param name="victims_activated" value="$(arg victims_activated)" />
   </node>
 
+
+
   <!-- Spawn map publishes borders and obstacles-->
   <include file="$(find map_pkg)/launch/spawn_map.launch">
+  <param name="map_env_params_file" value="$(arg map_env_params_file)" />
+    <param name="generate_new_config" value="$(arg generate_new_map_config)" />
     <arg name="gen_map_params_file" value="$(arg gen_map_params_file)" />
     <arg name="gazebo_models_path" value="$(arg gazebo_models_path)" />
     <arg name="elements_models_path" value="$(arg elements_models_path)" />
@@ -52,17 +56,16 @@
   </include>
 
 
-  <!-- Create PGM map based on published borders and obstacles-->
+<!-- Create PGM map based on published borders and obstacles NNEDE only for nav2 it generates the dynamic_map.yaml and runs the mapserver-->
   <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen">
     <rosparam command="load" file="$(arg map_env_params_file)" />
   </node>
   
-    <!-- Map server load the map statically and publishes it in topic /map -->
-  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
-  <!-- Spawn robot and description -->
+
+  <!--Spawn turtle bot robot and description-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_world.world"/>
+    <!--arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_world.world"/-->
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
@@ -80,10 +83,11 @@
  <!-- this publishes ground truth from odom to base_link -->
  <node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
     <param name="robot_name" value="$(arg shelfino_name)" />
- </node> 
+ </node>
  <!-- this emulates perfect no drift condition matching odom (that usually drifts) with map -->
   <node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
       args="0 0 0 0 0 0 map odom 100" />
+
 
   <!-- Publish robot joint states -->
  <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher" />
@@ -93,15 +97,15 @@
  </node>
 
   <!-- Move Base -->
-  <include file="$(find turtlebot3_navigation)/launch/move_base.launch" />
-    <group ns="move_base">
-      <!-- Lower update and publish rates to reduce CPU load -->
-     <rosparam param="local_costmap/update_frequency">5.0</rosparam>
-    <rosparam param="global_costmap/update_frequency">1.0</rosparam>
-    </group>
+<!--   <include file="$(find turtlebot3_navigation)/launch/move_base.launch" /> -->
+<!--     <group ns="move_base"> -->
+<!--        --><!-- Lower update and publish rates to reduce CPU load -->
+<!--      <rosparam param="local_costmap/update_frequency">5.0</rosparam> -->
+<!--     <rosparam param="global_costmap/update_frequency">1.0</rosparam> -->
+<!--     </group> -->
 
   <!-- RViz (optional) -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find loco_nav)/rviz/conf.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf.rviz" />
 
 
   <!--group ns="$(arg shelfino_name)">

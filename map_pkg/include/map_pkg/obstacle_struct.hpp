@@ -10,22 +10,24 @@ enum OBSTACLE_TYPE {
 };
 
 struct Obstacle {
-  double radius = 0.0;
-  double x = 0.0, y = 0.0;
-  double dx = 0.0, dy = 0.0;
-  double yaw = 0.0;
-  OBSTACLE_TYPE type = CYLINDER;
+  double radius;
+  double x, y;
+  double dx, dy;
+  double yaw;
+  OBSTACLE_TYPE type;
   std::string xml_file = "";
 
-  friend std::ostream& operator<<(std::ostream& os, const Obstacle& obs) {
+  friend std::ostream& operator<<(std::ostream& os, const Obstacle& obs){
     os << "Obstacle: ";
-    if (obs.type == OBSTACLE_TYPE::CYLINDER) {
+    if (obs.type == OBSTACLE_TYPE::CYLINDER){
       os << "Cylinder: ";
       os << "x: " << obs.x << " y: " << obs.y << " radius: " << obs.radius;
-    } else if (obs.type == OBSTACLE_TYPE::BOX) {
+    }
+    else if (obs.type == OBSTACLE_TYPE::BOX){
       os << "Box: ";
       os << "x: " << obs.x << " y: " << obs.y << " dx: " << obs.dx << " dy: " << obs.dy << " yaw: " << obs.yaw;
-    } else {
+    }
+    else{
       os << "Unknown type";
     }
     return os;
@@ -33,10 +35,12 @@ struct Obstacle {
 };
 
 struct Victim : public Obstacle {
-  Victim(double x = 0, double y = 0) {
-    this->x = x;
-    this->y = y;
-    this->type = CYLINDER;
+  Victim(double _x, double _y, double _r = 0.5) : Obstacle() {
+    this->x = _x;
+    this->y = _y;
+    this->radius = _r;
+    this->yaw = 0.0;
+    this->type = OBSTACLE_TYPE::CYLINDER;
   }
 };
 

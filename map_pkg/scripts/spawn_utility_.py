@@ -9,6 +9,8 @@ from geometry_msgs.msg import Pose
 from pathlib import Path
 
 def load_yaml(path):
+    while not os.path.exists(path):
+        rospy.sleep(0.1)
     with open(path, 'r') as f:
         return yaml.load(f, Loader=yaml.FullLoader)
 
@@ -27,9 +29,9 @@ def gen_rect_points(L1, L2):
 
 def get_borders_points(yaml_data):
     try:
-        m = yaml_data['/**']['ros__parameters']['map']
-        dx = float(yaml_data['/**']['ros__parameters']['dx'])
-        dy = float(yaml_data['/**']['ros__parameters']['dy'])
+        m = yaml_data['/_']['ros__parameters']['map']
+        dx = float(yaml_data['/_']['ros__parameters']['dx'])
+        dy = float(yaml_data['/_']['ros__parameters']['dy'])
         if "hex" in m:
             return gen_hex_points(dx)
         elif "rect" in m:
@@ -46,9 +48,9 @@ def spawn_borders():
 
     with open(map_env_params_file, 'r') as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
-        map_type = params["/**"]['ros__parameters']['map']
-        map_dx = params["/**"]['ros__parameters']['dx']
-        map_dy = params["/**"]['ros__parameters']['dy']
+        map_type = params["/_"]['ros__parameters']['map']
+        map_dx = params["/_"]['ros__parameters']['dx']
+        map_dy = params["/_"]['ros__parameters']['dy']
 
     borders_model = ""
     sdf_template_path = ""

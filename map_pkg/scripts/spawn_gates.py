@@ -1,56 +1,72 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import os
-import rospy
-import yaml
+import os, yaml, random
 import numpy as np
+import subprocess
+import rospy
+from termcolor import colored
 from geo_utility import *
-from gazebo_msgs.srv import SpawnModel
-from geometry_msgs.msg import Pose, Point
+from spawn_borders import get_borders_points
 
-L = 1.0  # Default gate size
-DELTA = L / 2.0 + 0.1  # half the border width + padding
+L = 1.0  # Default size for gate
+DELTA = L / 2.0 + 0.1  # 0.1 is half the border width + something
 
-def load_yaml(path):
-    parmas_file = None
-    while not os.path.isfile(path) and parmas_file is None:
-        with open(path, 'r') as file:
-            parmas_file = yaml.load(file, Loader=yaml.FullLoader)
-    return parmas_file
 
 def spawn_gates():
-    rospy.init_node('spawn_gates')
+    while  not rospy.has_param('/generate_config_file/gen_map_params_file'):
+        rospy.sleep(0.1)
+    gen_map_params_file = rospy.get_param('/generate_config_file/gen_map_params_file')
 
-    param_file = rospy.get_param('~gen_map_params_file')
-    models_path = rospy.get_param('~elements_models_path')
+    while not rospy.has_param('/spawn_gates/elements_models_path'):
+        rospy.sleep(0.1)
+    elements_models_path = rospy.get_param('/spawn_gates/elements_models_path')
 
-    # Load parameters
-    params = load_yaml(param_file)
-    gates = params["/**/send_gates"]['ros__parameters']
+    while not os.path.exists(gen_map_params_file):
+        rospy.sleep(0.1)
+    with open(gen_map_params_file, 'r') as file:
+        params = yaml.load(file, Loader=yaml.FullLoader)
+        gates = params["/_/send_gates"]['ros__parameters']
 
-    gate_model_path = os.path.join(models_path, 'gate', 'model.sdf')
+    gate_model_path = os.path.join(elements_models_path, 'gate', 'model.sdf')
 
-    N = len(gates['x'])
-    assert all(len(gates[k]) == N for k in ['y', 'yaw'])
+    # Check that all vectors have the same number of gates
+    assert len(gates['x']) == len(gates['y']) == len(gates['yaw']), \
+        "The number of gates in the conf file is wrong. The script for generating the configuration made a mistake."
 
-    rospy.wait_for_service('/gazebo/spawn_sdf_model')
-    spawn_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
+    print(colored(f"spawn_gates.py Spawing gates",'blue'))
+    commands = []
+    for gate in range(len(gates['x'])):
+        print(f"spawn_gates.py: Spawning gate in {gates['x'][gate]}, {gates['y'][gate]} with yaw {gates['yaw'][gate]}")
+        # If x and y are 0, then the gate is random
+        yaw = gates['yaw'][gate]
+        gate_polygon = square(gates['x'][gate], gates['y'][gate], L, gates['yaw'][gate])
 
-    for i in range(N):
-        with open(gate_model_path, 'r') as f:
-            model_xml = f.read()
+        center = center = gate_polygon.centroid.coords[0]
 
-        x, y, yaw = gates['x'][i], gates['y'][i], gates['yaw'][i]
-        pose = Pose(
-            position=Point(x=x, y=y, z=0),
-            orientation=quaternion_from_yaw(yaw)
-        )
+        # ROS1 equivalent of ROS2 spawn_entity.py:
+        # rosrun gazebo_ros spawn_model -file <path> -sdf -model gates<gate> -x <x> -y <y> -z 0.0001 -Y <yaw>
+        cmd = [
+            'rosrun', 'gazebo_ros', 'spawn_model',
+            '-file', gate_model_path,
+            '-sdf',
+            '-model', f"gates{gate}",
+            '-x', str(center[0]),
+            '-y', str(center[1]),
+            '-z', str(0.0001),
+            '-Y', str(yaw)
+        ]
 
-        model_name = f"gate_{i}"
-        spawn_model(model_name, model_xml, "", pose, "world")
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as e:
+            rospy.logerr(f"Failed to spawn gate {gate}: {e}")
 
-if __name__ == '__main__':
-    try:
-        spawn_gates()
-    except rospy.ROSInterruptException:
-        pass
+        commands.append(cmd)
+
+    return commands
+
+
+if __name__ == "__main__":
+    rospy.init_node('spawn_gates_ros1')
+    spawn_gates()
