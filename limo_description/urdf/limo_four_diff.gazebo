@@ -1,21 +1,20 @@
 <?xml version="1.0"?>
 
 <robot name="limo_four_diff" xmlns:xacro="http://ros.org/wiki/xacro">
-    <xacro:include filename="$(find limo_description)/urdf/limo_gazebo.gazebo" />
+    <xacro:include filename="$(find limo_description)/urdf/limo_transmission.gazebo" />
+
 
     <xacro:arg name="robot_id" default="" />
 
     <!-- Actuator configurations -->
-    <xacro:limo_wheel_transmission wheel_prefix="front_right" />
-    <xacro:limo_wheel_transmission wheel_prefix="front_left" />
-    <xacro:limo_wheel_transmission wheel_prefix="rear_left" />
-    <xacro:limo_wheel_transmission wheel_prefix="rear_right" />
+    <xacro:limo_wheel_transmission wheel_prefix="limo${robot_id}/front_right" />
+    <xacro:limo_wheel_transmission wheel_prefix="limo${robot_id}/front_left" />
+    <xacro:limo_wheel_transmission wheel_prefix="limo${robot_id}/rear_left" />
+    <xacro:limo_wheel_transmission wheel_prefix="limo${robot_id}/rear_right" />
     <!-- Controller configurations -->
-    <xacro:gazebo_laser frame_prefix="laser" />
-    <xacro:gazebo_depth_camera frame_prefix="depth_camera" />
-    <xacro:gazebo_imu frame_prefix="imu" />
     
-    <gazebo reference="front_left_wheel">
+    
+    <gazebo reference="limo${robot_id}/front_left_wheel">
         <mu1>10</mu1>
         <mu2>10</mu2>
         <kp>10000000.0</kp>
@@ -24,7 +23,7 @@
         <fdir1>1 0 0</fdir1>
         <maxContacts value="64"/>
     </gazebo>
-    <gazebo reference="front_right_wheel">
+    <gazebo reference="limo${robot_id}/front_right_wheel">
         <mu1>10</mu1>
         <mu2>10</mu2>
         <kp>10000000.0</kp>
@@ -33,7 +32,7 @@
         <fdir1>1 0 0</fdir1>
         <maxContacts value="64"/>
     </gazebo>
-    <gazebo reference="rear_left_wheel">
+    <gazebo reference="limo${robot_id}/rear_left_wheel">
         <mu1>10</mu1>
         <mu2>10</mu2>
         <kp>10000000.0</kp>
@@ -42,7 +41,7 @@
         <fdir1>1 0 0</fdir1>
         <maxContacts value="64"/>
     </gazebo>
-    <gazebo reference="rear_right_wheel">
+    <gazebo reference="limo${robot_id}/rear_right_wheel">
         <mu1>10</mu1>
         <mu2>10</mu2>
         <kp>10000000.0</kp>

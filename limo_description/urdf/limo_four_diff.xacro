@@ -5,7 +5,8 @@
     <xacro:arg name="robot_id" default="" />
     <xacro:macro name="limo" params='robot_id'>
     <xacro:include filename="$(find limo_description)/urdf/limo.xacro" />
-    
+    <xacro:include filename="$(find limo_description)/urdf/limo_four_diff.gazebo" />
+
     
     <!-- Variables -->
     <xacro:property name="M_PI" value="3.14159"/>

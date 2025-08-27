@@ -1,34 +1,10 @@
 <?xml version="1.0"?>
+ 
+  <robot name="limo_sensors" xmlns:xacro="http://ros.org/wiki/xacro">
 
-<robot name="limo_gazebo" xmlns:xacro="http://ros.org/wiki/xacro">
-
-    <xacro:macro name="limo_wheel_transmission" params="wheel_prefix">
-        <transmission name="${wheel_prefix}_wheel_trans" type="SimpleTransmission">
-            <type>transmission_interface/SimpleTransmission</type>
-            <actuator name="${wheel_prefix}_wheel_motor">
-                <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-                <mechanicalReduction>1</mechanicalReduction>
-            </actuator>
-            <joint name="${wheel_prefix}_wheel">
-                <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-            </joint>
-        </transmission>
-    </xacro:macro>
-
-    <xacro:macro name="limo_steering_hinge_transmission" params="wheel_prefix">
-        <transmission name="${wheel_prefix}_wheel_trans" type="SimpleTransmission">
-            <type>transmission_interface/SimpleTransmission</type>
-            <actuator name="${wheel_prefix}_wheel_motor">
-                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-                <mechanicalReduction>1</mechanicalReduction>
-            </actuator>
-            <joint name="${wheel_prefix}_wheel">
-                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-            </joint>
-        </transmission>
-    </xacro:macro>
-
-    <xacro:macro name="gazebo_laser" params="frame_prefix">
+    <xacro:arg name="robot_id" default="" />
+  
+   <xacro:macro name="gazebo_laser" params="frame_prefix">
         <gazebo reference="${frame_prefix}_link">
             <sensor type="ray" name="laser_sensor">
               <pose>0 0 0 0 0 0</pose>
@@ -55,8 +31,8 @@
                 </noise>
               </ray>
               <plugin name="gazebo_ros_laser_sensor" filename="libgazebo_ros_laser.so">
-                <topicName>/limo/scan</topicName>
-                <frameName>laser_link</frameName>
+                <topicName>/limo$(arg robot_id)/scan</topicName>
+                <frameName>${frame_prefix}_link</frameName>
               </plugin>
             </sensor>
           </gazebo>
@@ -135,4 +111,6 @@
         </sensor>
       </gazebo>
   </xacro:macro>
+  
+  
 </robot>
