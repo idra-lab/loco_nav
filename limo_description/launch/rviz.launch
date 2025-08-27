@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<launch>
+
+	<arg name="rviz_conf" default="$(find limo_description)/rviz/conf.rviz"/>
+	<arg name="robot_id" default="1" />
+	
+	<!-- send  urdf to param server-->
+	<include file="$(find limo_description)/launch/upload.launch">	
+		<arg name="robot_id" default="$(arg robot_id)"/>
+	</include>
+
+	<node pkg="tf" type="static_transform_publisher" name="world_broadcaster" args="0 0 0 0 0 0    /limo$(arg robot_id)/base_link /world  200"/>
+
+   	<!-- joint_state_publisher publish joint states from sliders-->
+        <node name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"/>
+
+
+	<node name="robot_state_publisher" pkg="robot_state_publisher"
+		type="robot_state_publisher" respawn="true">
+		<param name="publish_frequency" value="200" />
+		<param name="rate" value="200" />
+	</node>
+
+	
+	<!-- run rviz -->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_conf) -f world"/>
+
+</launch>
+

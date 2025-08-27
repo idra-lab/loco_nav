@@ -27,7 +27,7 @@
 
   <arg name="x_pos" default="-2.0"/>
   <arg name="y_pos" default="-0.5"/>
-  <arg name="z_pos" default="0.0"/>
+  <arg name="yaw_pos" default="0.0"/>
 
 
   <!-- Set parameters -->
@@ -60,7 +60,7 @@
   <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen">
     <rosparam command="load" file="$(arg map_env_params_file)" />
   </node>
-  
+
 
 
   <!--Spawn turtle bot robot and description-->
@@ -73,9 +73,16 @@
     <arg name="debug" value="false"/>
   </include>
 
-  <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
-  <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf"  args="-urdf -model turtlebot3_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description" />
 
+
+  <!--spawn the limo robot-->
+ <include file="$(find limo_description)/launch/upload.launch"/> 
+
+  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model limo -x $(arg x_pos) -y $(arg y_pos)  -Y $(arg yaw_pos)"/>
+
+
+
+  <!--start the controller-->
 
   <!-- AMCL Localization -->
   <!--node pkg="amcl" type="amcl" name="amcl" output="screen"/-->
