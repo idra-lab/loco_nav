@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Parameters -->
+  <arg name="model" default="burger"/>
+  <arg name="use_sim_time" default="true" />
+  <arg name="shelfino_name" default="turtlebot3_burger" />
+  <arg name="use_gui" default="true" />
+  <arg name="use_rviz" default="true" />
+  <!--arg name="rviz_config_file" default="$(find limo_description)/rviz/model_display.rviz" /-->
+  <!--arg name="gazebo_world_file" default="$(find limo_description)/worlds/empty.world" /-->
+  <arg name="spawn_shelfino" default="false" />
+  <arg name="shelfino_init_x" default="0.0" />
+  <arg name="shelfino_init_y" default="0.0" />
+  <arg name="shelfino_init_yaw" default="0.0" />
+
+  <!--arg name="nav_param_file" default="$(find shelfino_navigation)/config/shelfino.yaml" /-->
+  <arg name="nav_rviz_config_file" default="$(find map_pkg)/rviz/shelfino_nav.rviz" />
+  <arg name="map_env_params_file" default="$(find map_pkg)/config/map_config.yaml" />
+  <arg name="gen_map_params_file" default="$(find map_pkg)/config/full_config.yaml" />
+  <arg name="elements_models_path" default="$(find map_pkg)/models" />
+  <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
+  
+  
+   <arg name="victims_activated" default="true" />
+  <arg name="generate_new_map_config" default="true" />
+
+  <arg name="x_pos" default="-2.0"/>
+  <arg name="y_pos" default="-0.5"/>
+  <arg name="yaw_pos" default="0.0"/>
+
+
+  <!-- Set parameters -->
+  <param name="use_sim_time" value="$(arg use_sim_time)" />
+
+
+
+  <!-- Generate the config file  and load params into param server-->
+  <node pkg="map_pkg" type="generate_config_file.py" name="generate_config_file" output="screen">
+    <param name="map_env_params_file" value="$(arg map_env_params_file)" />
+    <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+    <param name="generate_new_config" value="$(arg generate_new_map_config)" />
+    <param name="victims_activated" value="$(arg victims_activated)" />
+  </node>
+
+
+
+  <!-- Spawn map publishes borders and obstacles-->
+  <include file="$(find map_pkg)/launch/spawn_map.launch">
+  <param name="map_env_params_file" value="$(arg map_env_params_file)" />
+    <param name="generate_new_config" value="$(arg generate_new_map_config)" />
+    <arg name="gen_map_params_file" value="$(arg gen_map_params_file)" />
+    <arg name="gazebo_models_path" value="$(arg gazebo_models_path)" />
+    <arg name="elements_models_path" value="$(arg elements_models_path)" />
+    <arg name="victims_activated" value="$(arg victims_activated)" />
+  </include>
+
+
+<!-- Create PGM map based on published borders and obstacles NNEDE only for nav2 it generates the dynamic_map.yaml and runs the mapserver-->
+  <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen">
+    <rosparam command="load" file="$(arg map_env_params_file)" />
+  </node>
+
+
+
+  <!--Spawn turtle bot robot and description-->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <!--arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_world.world"/-->
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+
+
+
+
+
+  <!-- Robot 1 -->
+  <group ns="limo1">
+     <arg name="robot_id" default="1"/>
+    <!-- Description with per-robot namespace -->
+    <include file="$(find limo_description)/launch/upload.launch">	
+		<arg name="robot_id" default="1"/>
+    </include>
+	
+    <!-- TF & joints -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+
+    <!-- Spawn into Gazebo at x,y,z,Yaw -->
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_limo1" output="screen"
+          args="-urdf -param robot_description -model limo1 -x 0 -y 0 -z 0.05 -Y 0.0" />
+
+    <!-- Load per-robot controllers -->
+    <rosparam command="load"
+            file="$(find limo_description)/config/limo_controllers.yaml"
+            subst_value="true"/>
+            
+            
+    <!-- Start controller_manager spawners inside the namespace -->
+    <node pkg="controller_manager" type="spawner" name="controller_spawner_limo1"
+          args="joint_state_controller diff_drive_controller" />
+  </group>
+
+  <!-- Robot 2 -->
+ <group ns="limo2">
+ 	<arg name="robot_id" default="2"/>
+    <!-- Description with per-robot namespace -->
+    <include file="$(find limo_description)/launch/upload.launch">	
+		<arg name="robot_id" default="2"/>
+    </include>
+	
+    <!-- TF & joints -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+
+    <!-- Spawn into Gazebo at x,y,z,Yaw -->
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_limo2" output="screen"
+          args="-urdf -param robot_description -model limo2 -x 2 -y 0 -z 0.05 -Y 0.0" />
+
+  <!-- Load per-robot controllers -->
+    <rosparam command="load"
+            file="$(find limo_description)/config/limo_controllers.yaml"
+            subst_value="true"/>
+            
+    <!-- Start controller_manager spawners inside the namespace -->
+    <node pkg="controller_manager" type="spawner" name="controller_spawner_limo2"
+          args="joint_state_controller diff_drive_controller" />
+  </group>
+
+
+
+
+
+
+  <!--start the controller-->
+
+  <!-- AMCL Localization -->
+  <!--node pkg="amcl" type="amcl" name="amcl" output="screen"/-->
+
+ <!-- this publishes in ground_truth topic the TF  from odom to base_link -->
+ <!--node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
+    <param name="robot_name" value="$(arg shelfino_name)" />
+ </node-->
+ <!-- this emulates perfect no drift condition matching odom (that usually drifts) with map -->
+  <!--node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
+      args="0 0 0 0 0 0 map odom 100" /-->
+
+
+
+  <!-- Move Base -->
+<!--   <include file="$(find turtlebot3_navigation)/launch/move_base.launch" /> -->
+<!--     <group ns="move_base"> -->
+<!--        --><!-- Lower update and publish rates to reduce CPU load -->
+<!--      <rosparam param="local_costmap/update_frequency">5.0</rosparam> -->
+<!--     <rosparam param="global_costmap/update_frequency">1.0</rosparam> -->
+<!--     </group> -->
+
+  <!-- RViz (optional) -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf.rviz" />
+
+
+  <!--group ns="$(arg shelfino_name)">
+    <include file="$(find shelfino_gazebo)/launch/shelfino.launch">
+      <arg name="use_sim_time" value="$(arg use_sim_time)" />
+      <arg name="use_gui" value="$(arg use_gui)" />
+      <arg name="use_rviz" value="$(arg use_rviz)" />
+      <arg name="gazebo_world_file" value="$(arg gazebo_world_file)" />
+      <arg name="spawn_shelfino" value="$(arg spawn_shelfino)" />
+      <arg name="shelfino_name" value="$(arg shelfino_name)" />
+      <arg name="rviz_config_file" value="$(arg rviz_config_file)" />
+      <arg name="shelfino_init_x" value="$(arg shelfino_init_x)" />
+      <arg name="shelfino_init_y" value="$(arg shelfino_init_y)" />
+      <arg name="shelfino_init_yaw" value="$(arg shelfino_init_yaw)" />
+    </include>
+
+    <include file="$(find shelfino_description)/launch/rsp.launch">
+      <arg name="use_sim_time" value="$(arg use_sim_time)" />
+      <arg name="shelfino_name" value="$(arg shelfino_name)" />
+    </include>
+  </group-->
+
+  <!-- Launch navigation -->
+  <!--include file="$(find shelfino_navigation)/launch/shelfino_nav.launch">
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="robot_name" value="$(arg shelfino_name)" />
+    <arg name="map_file" value="$(arg map_file)" />
+    <arg name="nav2_params_file" value="$(arg nav2_params_file)" />
+    <arg name="initial_x" value="$(arg shelfino_init_x)" />
+    <arg name="initial_y" value="$(arg shelfino_init_y)" />
+    <arg name="initial_yaw" value="$(arg shelfino_init_yaw)" />
+    <arg name="set_initial_pose" value="true" />
+  </include-->
+
+  <!-- Kill robot -->
+  <!--node pkg="shelfino_gazebo" type="destroy_shelfino" name="destroy_shelfino" output="screen" /-->
+
+</launch>

@@ -1,0 +1,18 @@
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
+
+diff_drive_controller:
+  type: diff_drive_controller/DiffDriveController
+  left_wheel:  ['left_wheel_joint']
+  right_wheel: ['right_wheel_joint']
+  wheel_separation: 0.27
+  wheel_radius: 0.049
+  cmd_vel_timeout: 0.25
+  enable_odom_tf: true
+
+  # Make TF frames unique per robot using launch arg expansion
+  odom_frame_id: limo$(arg robot_id)/odom
+  base_frame_id: limo$(arg robot_id)/base_link
+  
+
