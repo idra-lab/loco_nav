@@ -87,13 +87,13 @@
   <!-- AMCL Localization -->
   <!--node pkg="amcl" type="amcl" name="amcl" output="screen"/-->
 
- <!-- this publishes ground truth from odom to base_link -->
- <node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
+ <!-- this publishes in ground_truth topic the TF  from odom to base_link -->
+ <!--node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
     <param name="robot_name" value="$(arg shelfino_name)" />
- </node>
+ </node-->
  <!-- this emulates perfect no drift condition matching odom (that usually drifts) with map -->
-  <node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
-      args="0 0 0 0 0 0 map odom 100" />
+  <!--node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
+      args="0 0 0 0 0 0 map odom 100" /-->
 
 
   <!-- Publish robot joint states -->
