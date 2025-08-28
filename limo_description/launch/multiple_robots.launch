@@ -2,14 +2,13 @@
 <launch>
 
   <!-- Parameters -->
-  <arg name="model" default="burger"/>
+  <arg name="model" default="burger" />
   <arg name="use_sim_time" default="true" />
-  <arg name="shelfino_name" default="limo1" />
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
-  <!--arg name="rviz_config_file" default="$(find limo_description)/rviz/model_display.rviz" /-->
-  <!--arg name="gazebo_world_file" default="$(find limo_description)/worlds/empty.world" /-->
-  <arg name="spawn_shelfino" default="false" />
+
+  <arg name="gazebo_world_file" default="$(find map_pkg)/worlds/empty.world" />
+
   <arg name="shelfino_init_x" default="0.0" />
   <arg name="shelfino_init_y" default="0.0" />
   <arg name="shelfino_init_yaw" default="0.0" />
@@ -18,24 +17,22 @@
   <arg name="gen_map_params_file" default="$(find map_pkg)/config/full_config.yaml" />
   <arg name="elements_models_path" default="$(find map_pkg)/models" />
   <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
-  
-  
+
+
   <arg name="victims_activated" default="true" />
   <arg name="generate_new_map_config" default="true" />
 
-  <arg name="x_pos" default="-2.0"/>
-  <arg name="y_pos" default="-0.5"/>
-  <arg name="yaw_pos" default="0.0"/>
+  <arg name="x_pos" default="-2.0" />
+  <arg name="y_pos" default="-0.5" />
+  <arg name="yaw_pos" default="0.0" />
 
-  <arg name="x_pos2" default="0.0"/>
-  <arg name="y_pos2" default="-0.5"/>
-  <arg name="yaw_pos2" default="0.0"/>
-
+  <arg name="x_pos2" default="0.0" />
+  <arg name="y_pos2" default="-0.5" />
+  <arg name="yaw_pos2" default="0.0" />
 
 
   <!-- Set parameters -->
   <param name="use_sim_time" value="$(arg use_sim_time)" />
-
 
 
   <!-- Generate the config file  and load params into param server-->
@@ -47,10 +44,9 @@
   </node>
 
 
-
   <!-- Spawn map publishes borders and obstacles-->
   <include file="$(find map_pkg)/launch/spawn_map.launch">
-  <param name="map_env_params_file" value="$(arg map_env_params_file)" />
+    <param name="map_env_params_file" value="$(arg map_env_params_file)" />
     <param name="generate_new_config" value="$(arg generate_new_map_config)" />
     <arg name="gen_map_params_file" value="$(arg gen_map_params_file)" />
     <arg name="gazebo_models_path" value="$(arg gazebo_models_path)" />
@@ -59,84 +55,95 @@
   </include>
 
 
-<!-- Create PGM map based on published borders and obstacles NNEDE only for nav2 it generates the dynamic_map.yaml and runs the mapserver-->
+  <!-- Create PGM map based on published borders and obstacles NNEDE only for nav2 it generates the
+  dynamic_map.yaml and runs the mapserver-->
   <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen">
     <rosparam command="load" file="$(arg map_env_params_file)" />
   </node>
 
 
-
-  <!--Spawn turtle bot robot and description-->
+  <!--Start
+  gazebo-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <!--arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_world.world"/-->
-    <arg name="paused" value="false"/>
-    <arg name="use_sim_time" value="true"/>
-    <arg name="gui" value="true"/>
-    <arg name="headless" value="false"/>
-    <arg name="debug" value="false"/>
+    <arg name="world_name" value="$(arg gazebo_world_file)" />
+    <arg name="paused" value="false" />
+    <arg name="use_sim_time" value="true" />
+    <arg name="gui" value="true" />
+    <arg name="headless" value="false" />
+    <arg name="debug" value="false" />
   </include>
 
+  <group ns="limo1">
+    <arg name="robot_id" value="1" />
 
+    <!-- Description with per-robot namespace -->
+    <include file="$(find limo_description)/launch/upload.launch">
+      <arg name="robot_id" default="$(arg robot_id)" />
+    </include>
 
-  
-    <group ns="limo1">
-   	<arg name="robot_id" value="1"/>    
-     
-	<!-- Description with per-robot namespace -->
-	<include file="$(find limo_description)/launch/upload.launch">	
-		<arg name="robot_id" default="$(arg robot_id)"/>
-	</include>
-	
-   	<!--spawn the limo robot-->  
-  	<node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model limo$(arg robot_id) -x $(arg x_pos) -y $(arg y_pos) -z 1. -Y $(arg yaw_pos)"/>       
-	
-	<!-- TF & joints -->
-    	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+    <!--spawn
+    the limo robot-->
+    <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
+      args="-urdf -param robot_description -model limo$(arg robot_id) -x $(arg x_pos) -y $(arg y_pos) -z 1. -Y $(arg yaw_pos)" />
 
-        <!--static TF -->    	
-        <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"  args="0 0 0 0 0 0 map limo$(arg robot_id)/odom"/>           
-    </group>
-  
-     <group ns="limo2">
-   	<arg name="robot_id" value="2"/>    
-     
-	<!-- Description with per-robot namespace -->
-	<include file="$(find limo_description)/launch/upload.launch">	
-		<arg name="robot_id" default="$(arg robot_id)"/>
-	</include>
-	
-   	<!--spawn the limo robot-->  
-  	<node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model limo$(arg robot_id) -x $(arg x_pos2) -y $(arg y_pos2) -z 1. -Y $(arg yaw_pos2)"/>       
-	
-	<!-- TF & joints -->
-    	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+    <!-- TF & joints -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
 
-        <!--static TF -->    	
-        <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"  args="0 0 0 0 0 0 map limo$(arg robot_id)/odom"/>           
-    </group>
+    <!--static
+    TF -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
+      args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+  </group>
+
+  <group ns="limo2">
+    <arg name="robot_id" value="2" />
+
+    <!-- Description with per-robot namespace -->
+    <include file="$(find limo_description)/launch/upload.launch">
+      <arg name="robot_id" default="$(arg robot_id)" />
+    </include>
+
+    <!--spawn
+    the limo robot-->
+    <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
+      args="-urdf -param robot_description -model limo$(arg robot_id) -x $(arg x_pos2) -y $(arg y_pos2) -z 1. -Y $(arg yaw_pos2)" />
+
+    <!-- TF & joints -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
+
+    <!--static
+    TF -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
+      args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+  </group>
 
 
   <!--turtlebot-->
 
   <!-- AMCL Localization -->
-  <!--node pkg="amcl" type="amcl" name="amcl" output="screen"/-->
+  <!--node
+  pkg="amcl" type="amcl" name="amcl" output="screen"/-->
 
- <!-- this publishes in ground_truth topic the TF  from odom to base_link -->
- <!--node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
+  <!-- this publishes in ground_truth topic the TF  from odom to base_link -->
+  <!--node
+  pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
     <param name="robot_name" value="$(arg shelfino_name)" />
  </node-->
- 
- <!--this emulates perfect no drift condition matching odom (that usually drifts) with map -->
-  <!--node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
+
+  <!--this
+  emulates perfect no drift condition matching odom (that usually drifts) with map -->
+  <!--node
+  pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
       args="0 0 0 0 0 0 map odom 100" /-->
 
   <!-- Move Base -->
-<!--   <include file="$(find turtlebot3_navigation)/launch/move_base.launch" /> -->
-<!--     <group ns="move_base"> -->
-<!--        --><!-- Lower update and publish rates to reduce CPU load -->
-<!--      <rosparam param="local_costmap/update_frequency">5.0</rosparam> -->
-<!--     <rosparam param="global_costmap/update_frequency">1.0</rosparam> -->
-<!--     </group> -->
+  <!--   <include file="$(find turtlebot3_navigation)/launch/move_base.launch" /> -->
+  <!--     <group ns="move_base"> -->
+  <!--        --><!-- Lower update and publish
+  rates to reduce CPU load -->
+  <!--      <rosparam param="local_costmap/update_frequency">5.0</rosparam> -->
+  <!--     <rosparam param="global_costmap/update_frequency">1.0</rosparam> -->
+  <!--     </group> -->
 
   <!-- RViz (optional) -->
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf_multiple.rviz" />
