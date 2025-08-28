@@ -4,7 +4,7 @@
   <!-- Parameters -->
   <arg name="model" default="burger"/>
   <arg name="use_sim_time" default="true" />
-  <arg name="shelfino_name" default="turtlebot3_burger" />
+  <arg name="shelfino_name" default="limo1" />
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
   <!--arg name="rviz_config_file" default="$(find limo_description)/rviz/model_display.rviz" /-->
@@ -76,58 +76,24 @@
 
 
 
+  <!--spawn the limo robot-->
+ <include file="$(find limo_description)/launch/upload.launch"/> 
+
+  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model $(arg shelfino_name) -x $(arg x_pos) -y $(arg y_pos)  -Y $(arg yaw_pos)"/>
 
 
-  <!-- Robot 1 -->
-  <group ns="limo1">
-     <arg name="robot_id" default="1"/>
-    <!-- Description with per-robot namespace -->
-    <include file="$(find limo_description)/launch/upload.launch">	
-		<arg name="robot_id" default="1"/>
-    </include>
-	
-    <!-- TF & joints -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
-
-    <!-- Spawn into Gazebo at x,y,z,Yaw -->
-    <node pkg="gazebo_ros" type="spawn_model" name="spawn_limo1" output="screen"
-          args="-urdf -param robot_description -model limo1 -x 0 -y 0 -z 0.05 -Y 0.0" />
-
-    <!-- Load per-robot controllers -->
-    <rosparam command="load"
-            file="$(find limo_description)/config/limo_controllers.yaml"
-            subst_value="true"/>
-            
-            
-    <!-- Start controller_manager spawners inside the namespace -->
-    <node pkg="controller_manager" type="spawner" name="controller_spawner_limo1"
-          args="joint_state_controller diff_drive_controller" />
-  </group>
-
-  <!-- Robot 2 -->
- <group ns="limo2">
- 	<arg name="robot_id" default="2"/>
-    <!-- Description with per-robot namespace -->
-    <include file="$(find limo_description)/launch/upload.launch">	
-		<arg name="robot_id" default="2"/>
-    </include>
-	
-    <!-- TF & joints -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
-
-    <!-- Spawn into Gazebo at x,y,z,Yaw -->
-    <node pkg="gazebo_ros" type="spawn_model" name="spawn_limo2" output="screen"
-          args="-urdf -param robot_description -model limo2 -x 2 -y 0 -z 0.05 -Y 0.0" />
+   <arg name="robot_id" default="1"/>
 
   <!-- Load per-robot controllers -->
-    <rosparam command="load"
-            file="$(find limo_description)/config/limo_controllers.yaml"
-            subst_value="true"/>
+    <rosparam command="load"   file="$(find limo_description)/config/limo_controllers.yaml"   subst_value="true"/>
             
     <!-- Start controller_manager spawners inside the namespace -->
-    <node pkg="controller_manager" type="spawner" name="controller_spawner_limo2"
-          args="joint_state_controller diff_drive_controller" />
-  </group>
+    <node pkg="controller_manager" type="spawner" name="controller_spawner_limo"          args="joint_state_controller " />
+          
+     <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"  args="0 0 0 0 0 0 map limo$(arg robot_id)/odom"/>           
+          
+<!-- TF & joints -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
 
 
 
@@ -143,7 +109,8 @@
  <!--node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
     <param name="robot_name" value="$(arg shelfino_name)" />
  </node-->
- <!-- this emulates perfect no drift condition matching odom (that usually drifts) with map -->
+ 
+ <!--this emulates perfect no drift condition matching odom (that usually drifts) with map -->
   <!--node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
       args="0 0 0 0 0 0 map odom 100" /-->
 
@@ -158,7 +125,7 @@
 <!--     </group> -->
 
   <!-- RViz (optional) -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf_multiple.rviz" />
 
 
   <!--group ns="$(arg shelfino_name)">
