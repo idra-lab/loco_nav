@@ -4,7 +4,7 @@
   <!-- Parameters -->
   <arg name="model" default="burger"/>
   <arg name="use_sim_time" default="true" />
-  <arg name="shelfino_name" default="turtlebot3_burger" />
+  <arg name="shelfino_name" default="limo1" />
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
   <!--arg name="rviz_config_file" default="$(find limo_description)/rviz/model_display.rviz" /-->
@@ -78,7 +78,7 @@
   <!--spawn the limo robot-->
  <include file="$(find limo_description)/launch/upload.launch"/> 
 
-  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model limo -x $(arg x_pos) -y $(arg y_pos)  -Y $(arg yaw_pos)"/>
+  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model $(arg shelfino_name) -x $(arg x_pos) -y $(arg y_pos)  -Y $(arg yaw_pos)"/>
 
 
 
@@ -87,20 +87,22 @@
   <!-- AMCL Localization -->
   <!--node pkg="amcl" type="amcl" name="amcl" output="screen"/-->
 
- <!-- this publishes in ground_truth topic the TF  from odom to base_link -->
- <!--node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
+ <!-- this publishes in ground_truth topic the TF  from odom to base_link needed if you do not use controller-->
+ <node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
     <param name="robot_name" value="$(arg shelfino_name)" />
- </node-->
+      <param name="rate" value="100." />
+ </node>
  <!-- this emulates perfect no drift condition matching odom (that usually drifts) with map -->
-  <!--node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
-      args="0 0 0 0 0 0 map odom 100" /-->
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
+      args="0 0 0 0 0 0 map $(arg shelfino_name)/odom 100" />
 
 
   <!-- Publish robot joint states -->
- <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher" />
-
+<node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+  <param name="rate" value="100.0" />
+</node>
  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-    <param name="publish_frequency" type="double" value="50.0" />
+    <param name="publish_frequency" type="double" value="100.0" />
  </node>
 
   <!-- Move Base -->
