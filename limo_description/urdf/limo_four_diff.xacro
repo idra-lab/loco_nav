@@ -146,9 +146,10 @@
 	    
 	
         	
+    <!--test with rostopic pub /limo1/cmd_vel geometry_msgs/Twist '{linear: {x: 0.3}, angular: {z: 0.5}}'-->
+	
         	
-        	
-        	<gazebo>
+	<gazebo>
 		  <plugin name="limo_diff" filename="libgazebo_ros_diff_drive.so">
 		    <!-- Put all ROS topics inside this namespace -->
 		    <ros>
@@ -184,16 +185,16 @@
 		  
 		  
 		  <!-- Generic publisher for ALL joints in the model -->
-		  <plugin name="joint_state_pub" filename="libgazebo_ros_joint_state_publisher.so">
+		   <plugin name="joint_state_pub" filename="libgazebo_ros_joint_state_publisher.so">
 		    <ros><namespace>limo$(arg robot_id)</namespace></ros>
 		    <updateRate>50</updateRate>
 
-	               <alwaysOn>true</alwaysOn>
-			  <jointName>limo$(arg robot_id)/front_left_wheel, limo$(arg robot_id)/rear_left_wheel,limo$(arg robot_id)/front_right_wheel,limo$(arg robot_id)/rear_right_wheel</jointName>
+                     <alwaysOn>true</alwaysOn>
+	              <jointName>limo$(arg robot_id)/front_left_wheel, limo$(arg robot_id)/rear_left_wheel,limo$(arg robot_id)/front_right_wheel,limo$(arg robot_id)/rear_right_wheel</jointName>
 		
 		  </plugin>
 		  
-		</gazebo>
+	</gazebo>
 
         		
            
