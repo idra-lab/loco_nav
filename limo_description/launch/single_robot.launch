@@ -75,28 +75,10 @@
 
 
 
-
   <!--spawn the limo robot-->
  <include file="$(find limo_description)/launch/upload.launch"/> 
 
   <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model $(arg shelfino_name) -x $(arg x_pos) -y $(arg y_pos)  -Y $(arg yaw_pos)"/>
-
-
-   <arg name="robot_id" default="1"/>
-
-  <!-- Load per-robot controllers -->
-    <rosparam command="load"   file="$(find limo_description)/config/limo_controllers.yaml"   subst_value="true"/>
-            
-    <!-- Start controller_manager spawners inside the namespace -->
-    <node pkg="controller_manager" type="spawner" name="controller_spawner_limo"          args="joint_state_controller " />
-          
-     <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"  args="0 0 0 0 0 0 map limo$(arg robot_id)/odom"/>           
-          
-<!-- TF & joints -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
-
-
-
 
 
 
@@ -105,16 +87,23 @@
   <!-- AMCL Localization -->
   <!--node pkg="amcl" type="amcl" name="amcl" output="screen"/-->
 
- <!-- this publishes in ground_truth topic the TF  from odom to base_link -->
- <!--node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
+ <!-- this publishes in ground_truth topic the TF  from odom to base_link needed if you do not use controller-->
+ <node pkg="map_pkg" type="ground_truth_odom.py" name="ground_truth_odom" output="screen">
     <param name="robot_name" value="$(arg shelfino_name)" />
- </node-->
- 
- <!--this emulates perfect no drift condition matching odom (that usually drifts) with map -->
-  <!--node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
-      args="0 0 0 0 0 0 map odom 100" /-->
+      <param name="rate" value="100." />
+ </node>
+ <!-- this emulates perfect no drift condition matching odom (that usually drifts) with map -->
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_broadcaster"
+      args="0 0 0 0 0 0 map $(arg shelfino_name)/odom 100" />
 
 
+  <!-- Publish robot joint states -->
+<node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+  <param name="rate" value="100.0" />
+</node>
+ <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="100.0" />
+ </node>
 
   <!-- Move Base -->
 <!--   <include file="$(find turtlebot3_navigation)/launch/move_base.launch" /> -->
@@ -125,7 +114,7 @@
 <!--     </group> -->
 
   <!-- RViz (optional) -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf_multiple.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf.rviz" />
 
 
   <!--group ns="$(arg shelfino_name)">
