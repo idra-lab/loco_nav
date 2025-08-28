@@ -29,13 +29,14 @@
 
 	    <xacro:property name="wheel_length" value="0.045" />
 	    <xacro:property name="wheel_radius" value="0.045" />
-	  <link name="limo${robot_id}/base_footprint"/>
-
-	  <joint name="limo${robot_id}/base_joint" type="fixed">
+	    
+	    
+	  <!--link name="limo${robot_id}/base_footprint"/-->
+	  <!--joint name="limo${robot_id}/base_joint" type="fixed">
 	    <parent link="limo${robot_id}/base_footprint"/>
 	    <child link="limo${robot_id}/base_link"/>
 	    <origin xyz="0.0 0.0 0.15" rpy="0 0 0"/>
-	  </joint>
+	  </joint-->
 	    <!-- Base link -->
 	    <link name="limo${robot_id}/base_link">
 		<visual>
@@ -47,9 +48,9 @@
 		</visual>
 		<collision>
 		    <!--origin xyz="0 0 -0.15" rpy="0 0 1.57" /-->
-		    <origin xyz="0 0 0" rpy="0 0 0" />
+		    <origin xyz="0 0 -0.15" rpy="0 0 1.57" />
 		  <geometry>
-		      <box size="${base_x_size} ${base_y_size} ${base_z_size}"/>
+		      <mesh filename="file://$(find limo_description)/meshes/limo_optimal.dae" scale="1 1 1"/>
 		  </geometry>
 		</collision>
 	    </link>
@@ -116,8 +117,7 @@
 
    
     </gazebo>
-	    
-	    
+	        
 	    
  
     </xacro:macro>
