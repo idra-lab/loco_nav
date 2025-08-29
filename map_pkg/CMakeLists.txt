@@ -76,11 +76,6 @@ install(DIRECTORY launch/
   
   
     
-   
- install(DIRECTORY rviz/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz
-  PATTERN ".svn" EXCLUDE)
-  
   
     
  install(DIRECTORY config/
