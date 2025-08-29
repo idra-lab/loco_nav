@@ -6,12 +6,7 @@
   <arg name="use_sim_time" default="true" />
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
-
   <arg name="gazebo_world_file" default="$(find map_pkg)/worlds/empty.world" />
-
-  <arg name="shelfino_init_x" default="0.0" />
-  <arg name="shelfino_init_y" default="0.0" />
-  <arg name="shelfino_init_yaw" default="0.0" />
 
   <arg name="map_env_params_file" default="$(find map_pkg)/config/map_config.yaml" />
   <arg name="gen_map_params_file" default="$(find map_pkg)/config/full_config.yaml" />
@@ -31,9 +26,16 @@
   <arg name="yaw_pos2" default="0.0" />
 
 
+<arg name="start_controller" default="false" />
+
+
+  <!-- todo-->
+  <arg name="shelfino_init_x" default="0.0" />
+  <arg name="shelfino_init_y" default="0.0" />
+  <arg name="shelfino_init_yaw" default="0.0" />
+
   <!-- Set parameters -->
   <param name="use_sim_time" value="$(arg use_sim_time)" />
-
 
   <!-- Generate the config file  and load params into param server-->
   <node pkg="map_pkg" type="generate_config_file.py" name="generate_config_file" output="screen">
@@ -42,7 +44,6 @@
     <param name="generate_new_config" value="$(arg generate_new_map_config)" />
     <param name="victims_activated" value="$(arg victims_activated)" />
   </node>
-
 
   <!-- Spawn map publishes borders and obstacles-->
   <include file="$(find map_pkg)/launch/spawn_map.launch">
@@ -54,7 +55,6 @@
     <arg name="victims_activated" value="$(arg victims_activated)" />
   </include>
 
-
   <!-- Create PGM map based on published borders and obstacles NNEDE only for nav2 it generates the
   dynamic_map.yaml and runs the mapserver-->
   <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen">
@@ -62,8 +62,7 @@
   </node>
 
 
-  <!--Start
-  gazebo-->
+  <!--Start  gazebo-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(arg gazebo_world_file)" />
     <arg name="paused" value="false" />
@@ -118,6 +117,12 @@
   </group>
 
 
+<group if="$(arg start_controller)">
+  <node pkg="limo_description" type="spawn_controllers.py" name="controllers" output="screen"  args="--n_robots 2"/>
+</group>
+
+
+
   <!--turtlebot-->
 
   <!-- AMCL Localization -->
@@ -146,6 +151,6 @@
   <!--     </group> -->
 
   <!-- RViz (optional) -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find map_pkg)/rviz/conf_multiple.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find limo_description)/rviz/conf_multiple.rviz" />
 
 </launch>

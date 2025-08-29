@@ -13,7 +13,7 @@ robot_params['limo0'] = {'dt': 0.01,
                             'spawn_y': 0.05,
                             'spawn_z': 0.25,
                             'spawn_yaw': 0.1,
-                            'buffer_size': 30000}
+                            'buffer_size': 3000}
 
 robot_params['limo1'] = {'dt': 0.01,
                             'kp': np.array([100.,   100.]),
@@ -26,7 +26,7 @@ robot_params['limo1'] = {'dt': 0.01,
                             'spawn_y': 0.05,
                             'spawn_z': 0.25,
                             'spawn_yaw': 0.1,
-                            'buffer_size': 100}
+                            'buffer_size': 3000}
 
 robot_params['limo2'] = {'dt': 0.01,
                             'kp': np.array([100.,   100.]),
@@ -39,7 +39,7 @@ robot_params['limo2'] = {'dt': 0.01,
                             'spawn_y': 0.05,
                             'spawn_z': 0.25,
                             'spawn_yaw': 0.1,
-                            'buffer_size': 100}
+                            'buffer_size': 3000}
 
 
 robot_params['tractor3'] = {'dt': 0.01,

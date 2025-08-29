@@ -7,11 +7,7 @@ Created on Fri Nov  2 16:52:08 2018
 
 from __future__ import print_function
 import rospy as ros
-import rosgraph
 import numpy as np
-import signal
-import sys
-import time
 from base_controllers.tracked_robot.velocity_generator import VelocityGenerator
 from base_controllers.tracked_robot.environment.trajectory import Trajectory, ModelsList
 from multiprocessing import Process
@@ -20,26 +16,29 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 from tf.transformations import euler_from_quaternion
 from base_controllers.utils.math_tools import unwrap_vector
-
+from matplotlib import pyplot as plt
 from termcolor import colored
 from lyapunov import LyapunovController, LyapunovParams, Robot, unwrap_angle
 import params as conf
 np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
 
-# Lyapunov Controller node
 class Controller():
 
     def __init__(self, robot_name="limo1"):
         self.robot_name = robot_name
-
+        self.DEBUG = True
 
     def initVars(self):
         self.basePoseW = np.zeros(6)
         self.baseTwistW = np.zeros(6)
-
+        self.ctrl_v = 0.
+        self.ctrl_omega = 0.0
+        self.v_d = 0.1
+        self.omega_d = 0
 
         self.quaternion = np.array([0., 0., 0., 1.])# fundamental otherwise receivepose gets stuck
         self.euler_old = np.zeros(3)# fundamental otherwise receivepose gets stuck
+        self.old_theta = 0
         self.time = np.zeros(1)
         self.log_counter = 0
         # log vars
@@ -49,18 +48,31 @@ class Controller():
             (6, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
         self.time_log = np.full(
             (conf.robot_params[self.robot_name]['buffer_size']), np.nan)
-        self.des_x = 0.
-        self.des_y = 0.
-        self.des_theta = 0.
 
         self.state_log = np.full(
             (3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
         self.des_state_log = np.full(
             (3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
 
+        try:
+            odom0 = ros.wait_for_message("/" + self.robot_name + "/odom", Odometry, timeout=10.0)
+        except ros.ROSException:
+            ros.logerr(f"Timed out waiting for /{self.robot_name}/odom")
+            return
+
+        p0 = odom0.pose.pose.position
+        q0 = odom0.pose.pose.orientation
+        yaw0 = euler_from_quaternion([q0.x, q0.y, q0.z, q0.w])[2]
+        print(colored(f"Initialized desired state from first /odom: x0: {p0.x},y0: {p0.y},yaw0: {yaw0}", "red"))
+
+        #initialize with actual state
+        self.des_x = p0.x
+        self.des_y = p0.y
+        self.des_theta = yaw0
+
         vel_gen = VelocityGenerator(simulation_time=20., DT=conf.robot_params[self.robot_name]['dt'])
-        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.2, omega_max_=0.3)
-        self.traj = Trajectory(ModelsList.UNICYCLE, self.des_x, self.des_y, self.des_theta, DT=conf.robot_params[self.robot_name]['dt'],
+        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.05, omega_max_=0.05)
+        self.trajectory = Trajectory(ModelsList.UNICYCLE, self.des_x, self.des_y, self.des_theta, DT=conf.robot_params[self.robot_name]['dt'],
                                v=v_ol, omega=omega_ol, v_dot=v_dot_ol, omega_dot=omega_dot_ol)
 
     def startPublisherSubscribers(self):
@@ -76,52 +88,58 @@ class Controller():
     def start_controller(self):
         ros.init_node(f'{self.robot_name}_controller', anonymous=False, log_level=ros.FATAL)
         ros.on_shutdown(self.on_shutdown)
-
-        self.initVars()
         self.startPublisherSubscribers()
+        self.initVars()
         # Lyapunov controller parameters
-        params = LyapunovParams(K_P=10., K_THETA=1., DT=0.01)
+        params = LyapunovParams(K_P=20., K_THETA=2., DT=conf.robot_params[self.robot_name]['dt'])
         self.controller = LyapunovController(params=params)
         self.robot_state = Robot()
-
-        rate = ros.Rate(100)  # 100Hz loop, adjust as needed
-        self.ctrl_v = -0.1
-        self.ctrl_omega = 0.1
+        rate = ros.Rate(1/conf.robot_params[self.robot_name]['dt'])  # 100Hz loop, adjust as needed
 
         while not ros.is_shutdown():
             try:
-
-                # Add the control loop here!
                 # update kinematics
+                self.robot_state.x = self.basePoseW[0]
+                self.robot_state.y = self.basePoseW[1]
+                self.robot_state.theta = self.basePoseW[5]
+                # print(f"pos X: {self.robot_state.x} Y: {self.robot_state.y} th: {self.robot_state.theta}")
 
-                # self.robot_state.x = self.basePoseW[robot.u.sp_crd["LX"]]
-                # self.robot_state.y = self.basePoseW[robot.u.sp_crd["LY"]]
-                # self.robot_state.theta = self.basePoseW[robot.u.sp_crd["AZ"]]
-                # # print(f"pos X: {robot.x} Y: {robot.y} th: {robot.theta}")
-                #
-                # robot.des_x, robot.des_y, robot.des_theta, robot.v_d, robot.omega_d, robot.v_dot_d, robot.omega_dot_d, traj_finished = robot.traj.evalTraj(robot.time)
-                # if traj_finished:
-                #     break
-                # else:
-                #     self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, self.v_dot_d, self.omega_dot_d = self.trajectory.eval_trajectory(self.time)
-                #     self.des_theta, self.old_theta = unwrap_angle(self.des_theta, self.old_theta)
-                # self.ctrl_v, self.ctrl_omega  = self.controller.control_unicycle(self.robot_state, self.time, self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, False)
+                if self.DEBUG:
+                    self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, self.v_dot_d, self.omega_dot_d, traj_finished = self.trajectory.evalTraj(self.time)
+                    if traj_finished:
+                        break
+                #print(f"des_x: {self.des_x}, des_y: {self.des_y}")
+
+                self.des_theta, self.old_theta = unwrap_angle(self.des_theta, self.old_theta)
+                self.ctrl_v, self.ctrl_omega  = self.controller.control_unicycle(self.robot_state, self.time, self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, False)
+
                 self.send_commands(self.ctrl_v, self.ctrl_omega)
-
+                self.logData()
                 # wait for synconization of the control loop
                 rate.sleep()
                 # to avoid issues of dt 0.0009999
                 self.time = np.round(self.time + np.array([conf.robot_params[self.robot_name]['dt']]),  4)
 
-                #print(f"[{self.robot_name}] running...")
+                if self.DEBUG:
+                    if self.time == 20:
+                        print("Ending simulation...")
+                        break
+
             except (ros.ROSInterruptException, ros.service.ServiceException):
                 break
+        #debug
+        if self.DEBUG:
+            self.plotData()
 
-    def receive_reference(self, msg):
-        msg = Vector3()
-        self.des_x = msg.x
-        self.des_y = msg.y
-        self.des_theta = msg.z
+    def receive_reference(self, msg : Vector3):
+        if np.linalg.norm(np.array([ msg.x,  msg.y,  msg.z]) - self.robot_state) > 0.5:
+            print(colored("Reference is too far from actual state, negleting it"))
+            return
+        else:
+            self.des_x = msg.x
+            self.des_y = msg.y
+            self.des_theta = msg.z
+        #print(f"received des_x: {self.des_x}, des_y: {self.des_y}")
 
     def receive_pose(self, msg):
         self.quaternion = np.array([
@@ -165,12 +183,83 @@ class Controller():
             self.des_state_log[0, self.log_counter] = self.des_x
             self.des_state_log[1, self.log_counter] = self.des_y
             self.des_state_log[2, self.log_counter] = self.des_theta
-            self.state_log[0, self.log_counter] = self.basePoseW[self.u.sp_crd["LX"]]
-            self.state_log[2, self.log_counter] = self.basePoseW[self.u.sp_crd["AZ"]]
+            self.state_log[0, self.log_counter] = self.basePoseW[0]
+            self.state_log[1, self.log_counter] = self.basePoseW[1]
+            self.state_log[2, self.log_counter] = self.basePoseW[5]
             self.basePoseW_log[:, self.log_counter] = self.basePoseW
             self.baseTwistW_log[:, self.log_counter] = self.baseTwistW
             self.time_log[self.log_counter] = self.time
             self.log_counter += 1
+
+
+    def plotData(self):
+
+        # xy plot
+        plt.figure()
+        plt.title(f'{self.robot_name}')
+        plt.plot(self.des_state_log[0, :],
+                 self.des_state_log[1, :], "-r", label="desired")
+        plt.plot(self.state_log[0, :],
+                 self.state_log[1, :], "-b", label="real")
+        plt.legend()
+        plt.xlabel("x[m]")
+        plt.ylabel("y[m]")
+        plt.axis("equal")
+        plt.grid(True)
+
+
+        plt.figure()
+        plt.title(f'{self.robot_name}')
+        plt.subplot(3, 1, 1)
+        plt.plot(self.time_log, self.des_state_log[0, :], "-r", label="desired")
+        plt.plot(self.time_log, self.state_log[0, :], "-b", label="real")
+        plt.legend()
+        plt.xlabel("time[m]")
+        plt.ylabel("x[m]")
+        plt.axis("equal")
+        plt.grid(True)
+
+
+        plt.title(f'{self.robot_name}')
+        plt.subplot(3, 1, 2)
+        plt.plot(self.time_log, self.des_state_log[1, :], "-r", label="desired")
+        plt.plot(self.time_log, self.state_log[1, :], "-b", label="real")
+        plt.legend()
+        plt.xlabel("time[m]")
+        plt.ylabel("y[m]")
+        plt.axis("equal")
+        plt.grid(True)
+
+
+        plt.title(f'{self.robot_name}')
+        plt.subplot(3, 1, 3)
+        plt.plot(self.time_log, self.des_state_log[2, :], "-r", label="desired")
+        plt.plot(self.time_log, self.state_log[2, :], "-b", label="real")
+        plt.legend()
+        plt.xlabel("time[m]")
+        plt.ylabel("theta[m]")
+        plt.axis("equal")
+        plt.grid(True)
+
+
+        # tracking errors
+        # self.log_e_x, self.log_e_y, self.log_e_theta = self.controller.getErrors()
+        # plt.figure()
+        # plt.title(f'{self.robot_name}')
+        # exy = np.sqrt(np.power(self.log_e_x, 2) +
+        #               np.power(self.log_e_y, 2))
+        # plt.plot(exy, "-b")
+        # plt.ylabel("exy")
+        # plt.title("tracking error")
+        # plt.grid(True)
+        #
+        # plt.figure()
+        # plt.plot(self.log_e_theta, "-b")
+        # plt.ylabel("eth")
+        # plt.grid(True)
+        # plt.show(block=True)
+
+        plt.show(block=True)
 
     def on_shutdown(self):
         print(f"[{self.robot_name}] received shutdown signal.")
