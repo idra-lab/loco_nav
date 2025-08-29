@@ -17,13 +17,13 @@
   <arg name="victims_activated" default="true" />
   <arg name="generate_new_map_config" default="true" />
 
-  <arg name="x_pos" default="-2.0" />
-  <arg name="y_pos" default="-0.5" />
+  <arg name="x_pos" default="0.0" />
+  <arg name="y_pos" default="0." />
   <arg name="yaw_pos" default="0.0" />
 
-  <arg name="x_pos2" default="0.0" />
-  <arg name="y_pos2" default="-0.5" />
-  <arg name="yaw_pos2" default="0.0" />
+  <arg name="x_pos1" default="1.0" />
+  <arg name="y_pos1" default="0." />
+  <arg name="yaw_pos1" default="0.0" />
 
 
 <arg name="start_controller" default="false" />

@@ -63,7 +63,7 @@ class Controller():
         p0 = odom0.pose.pose.position
         q0 = odom0.pose.pose.orientation
         yaw0 = euler_from_quaternion([q0.x, q0.y, q0.z, q0.w])[2]
-        print(colored(f"Initialized desired state from first /odom: x0: {p0.x},y0: {p0.y},yaw0: {yaw0}", "red"))
+        print(colored(f"{self.robot_name}: Init. desired state from first /odom: x0: {p0.x},y0: {p0.y},yaw0: {yaw0}", "red"))
 
         #initialize with actual state
         self.des_x = p0.x
@@ -71,7 +71,7 @@ class Controller():
         self.des_theta = yaw0
 
         vel_gen = VelocityGenerator(simulation_time=20., DT=conf.robot_params[self.robot_name]['dt'])
-        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.05, omega_max_=0.05)
+        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.1, omega_max_=0.05)
         self.trajectory = Trajectory(ModelsList.UNICYCLE, self.des_x, self.des_y, self.des_theta, DT=conf.robot_params[self.robot_name]['dt'],
                                v=v_ol, omega=omega_ol, v_dot=v_dot_ol, omega_dot=omega_dot_ol)
 
@@ -108,7 +108,7 @@ class Controller():
                     self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, self.v_dot_d, self.omega_dot_d, traj_finished = self.trajectory.evalTraj(self.time)
                     if traj_finished:
                         break
-                #print(f"des_x: {self.des_x}, des_y: {self.des_y}")
+                #print(f"{self.robot_name} des_x: {self.des_x}, des_y: {self.des_y}")
 
                 self.des_theta, self.old_theta = unwrap_angle(self.des_theta, self.old_theta)
                 self.ctrl_v, self.ctrl_omega  = self.controller.control_unicycle(self.robot_state, self.time, self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, False)
@@ -123,23 +123,27 @@ class Controller():
                 if self.DEBUG:
                     if self.time == 20:
                         print("Ending simulation...")
+                        self.plotData()
+                        # send zero
+                        self.send_commands(0., 0.)
                         break
 
             except (ros.ROSInterruptException, ros.service.ServiceException):
+                self.send_commands(0., 0.)
+                self.plotData()
                 break
-        #debug
-        if self.DEBUG:
-            self.plotData()
+
+
 
     def receive_reference(self, msg : Vector3):
-        if np.linalg.norm(np.array([ msg.x,  msg.y,  msg.z]) - self.robot_state) > 0.5:
-            print(colored("Reference is too far from actual state, negleting it"))
+        if np.linalg.norm(np.array([msg.x, msg.y, msg.z]) - np.array([self.robot_state.x,self.robot_state.y, self.robot_state.theta])) > 1.5:
+            print(colored("Reference is too far from actual state, negleting it", "red"))
             return
         else:
             self.des_x = msg.x
             self.des_y = msg.y
             self.des_theta = msg.z
-        #print(f"received des_x: {self.des_x}, des_y: {self.des_y}")
+            print(colored(f"received {self.robot_name} des_x: {self.des_x}, des_y: {self.des_y}"), "red")
 
     def receive_pose(self, msg):
         self.quaternion = np.array([
