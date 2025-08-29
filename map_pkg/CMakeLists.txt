@@ -5,7 +5,7 @@ project(map_pkg)
 add_compile_options(-Wall -Wextra -Wpedantic)
 
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS
+find_package(catkin REQUIRED COMPONENTS rospy
   roscpp
   rospy
   std_msgs
@@ -27,15 +27,20 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-## Python scripts (optional install)
-catkin_install_python(PROGRAMS
-  scripts/spawn_obstacles.py
-  scripts/spawn_gates.py
-  scripts/spawn_borders.py
-  scripts/spawn_utility_.py
-  scripts/spawn_borders.py
+catkin_install_python(
+  PROGRAMS
+    scripts/spawn_obstacles.py
+    scripts/spawn_gates.py
+    scripts/spawn_borders.py
+    scripts/spawn_utility_.py
+    scripts/create_map_pgm.py
+    scripts/generate_config_file.py
+    scripts/ground_truth_odom.py
+    scripts/geo_utility.py 
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+  
+
 
 ## C++ executables
 add_executable(send_obstacles src/send_obstacles.cpp src/utilities.cpp)
@@ -90,18 +95,4 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/maps
   PATTERN ".svn" EXCLUDE)
   
-  
-catkin_install_python(
-  PROGRAMS
-    scripts/spawn_obstacles.py
-    scripts/spawn_gates.py
-	scripts/create_map_pgm.py
-	scripts/generate_config_file.py
-	scripts/ground_truth_odom.py
-	scripts/geo_utility.py
-    scripts/spawn_borders.py
-    scripts/spawn_utility_.py
-    scripts/spawn_borders.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
   
