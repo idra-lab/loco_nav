@@ -11,7 +11,7 @@ catkin_package(
 
 catkin_install_python(
   PROGRAMS
-    coontroller/spawn_controller.py
+    controller/spawn_controllers.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   

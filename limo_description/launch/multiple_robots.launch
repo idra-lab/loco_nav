@@ -73,8 +73,8 @@
     <arg name="debug" value="false" />
   </include>
 
-  <group ns="limo1">
-    <arg name="robot_id" value="1" />
+  <group ns="limo0">
+    <arg name="robot_id" value="0" />
 
     <!-- Description with per-robot namespace -->
     <include file="$(find limo_description)/launch/upload.launch">
@@ -95,8 +95,8 @@
       args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
   </group>
 
-  <group ns="limo2">
-    <arg name="robot_id" value="2" />
+  <group ns="limo1">
+    <arg name="robot_id" value="1" />
 
     <!-- Description with per-robot namespace -->
     <include file="$(find limo_description)/launch/upload.launch">

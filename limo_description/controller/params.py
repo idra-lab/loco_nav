@@ -2,7 +2,7 @@ import numpy as np
 
 robot_params = {}
 
-robot_params['tractor0'] = {'dt': 0.01,
+robot_params['limo0'] = {'dt': 0.01,
                             'kp': np.array([100.,   100.]),
                             'kd':  np.array([10.,    10.]),
                             'q_0':  np.array([0, 0]),
@@ -15,7 +15,7 @@ robot_params['tractor0'] = {'dt': 0.01,
                             'spawn_yaw': 0.1,
                             'buffer_size': 30000}
 
-robot_params['tractor1'] = {'dt': 0.01,
+robot_params['limo1'] = {'dt': 0.01,
                             'kp': np.array([100.,   100.]),
                             'kd':  np.array([10.,    10.]),
                             'q_0':  np.array([0, 0]),
@@ -28,7 +28,7 @@ robot_params['tractor1'] = {'dt': 0.01,
                             'spawn_yaw': 0.1,
                             'buffer_size': 100}
 
-robot_params['tractor2'] = {'dt': 0.01,
+robot_params['limo2'] = {'dt': 0.01,
                             'kp': np.array([100.,   100.]),
                             'kd':  np.array([10.,    10.]),
                             'q_0':  np.array([0, 0]),

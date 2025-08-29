@@ -104,5 +104,5 @@ class LyapunovController:
 
         # print("ERRORS -> x:%.2f, y:%.2f, theta:%.2f" % (ex, ey, etheta))
         # print("VELS -> v:%.2f, o:%.2f" % (v_ref + dv, o_ref + domega))
-        return v, omega,  V, V_dot
+        return v, omega
 

@@ -1,0 +1,209 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Nov  2 16:52:08 2018
+
+@author: mfocchi
+"""
+
+from __future__ import print_function
+import rospy as ros
+import rosgraph
+import numpy as np
+import signal
+import sys
+import time
+from base_controllers.tracked_robot.velocity_generator import VelocityGenerator
+from base_controllers.tracked_robot.environment.trajectory import Trajectory, ModelsList
+from multiprocessing import Process
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Vector3
+from tf.transformations import euler_from_quaternion
+from base_controllers.utils.math_tools import unwrap_vector
+
+from termcolor import colored
+from lyapunov import LyapunovController, LyapunovParams, Robot, unwrap_angle
+import params as conf
+np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
+
+# Lyapunov Controller node
+class Controller():
+
+    def __init__(self, robot_name="limo1"):
+        self.robot_name = robot_name
+
+
+    def initVars(self):
+        self.basePoseW = np.zeros(6)
+        self.baseTwistW = np.zeros(6)
+
+
+        self.quaternion = np.array([0., 0., 0., 1.])# fundamental otherwise receivepose gets stuck
+        self.euler_old = np.zeros(3)# fundamental otherwise receivepose gets stuck
+        self.time = np.zeros(1)
+        self.log_counter = 0
+        # log vars
+        self.basePoseW_log = np.full(
+            (6, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
+        self.baseTwistW_log = np.full(
+            (6, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
+        self.time_log = np.full(
+            (conf.robot_params[self.robot_name]['buffer_size']), np.nan)
+        self.des_x = 0.
+        self.des_y = 0.
+        self.des_theta = 0.
+
+        self.state_log = np.full(
+            (3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
+        self.des_state_log = np.full(
+            (3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
+
+        vel_gen = VelocityGenerator(simulation_time=20., DT=conf.robot_params[self.robot_name]['dt'])
+        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.2, omega_max_=0.3)
+        self.traj = Trajectory(ModelsList.UNICYCLE, self.des_x, self.des_y, self.des_theta, DT=conf.robot_params[self.robot_name]['dt'],
+                               v=v_ol, omega=omega_ol, v_dot=v_dot_ol, omega_dot=omega_dot_ol)
+
+    def startPublisherSubscribers(self):
+
+        self.command_pub = ros.Publisher(
+            "/" + self.robot_name + "/cmd_vel", Twist, queue_size=1, tcp_nodelay=True)
+
+        self.sub_odom = ros.Subscriber("/" + self.robot_name + "/odom", Odometry, callback=self.receive_pose,
+                                       queue_size=1, tcp_nodelay=True)
+        self.sub_reference = ros.Subscriber("/" + self.robot_name + "/ref", Vector3, callback=self.receive_reference,
+                                       queue_size=1, tcp_nodelay=True)
+
+    def start_controller(self):
+        ros.init_node(f'{self.robot_name}_controller', anonymous=False, log_level=ros.FATAL)
+        ros.on_shutdown(self.on_shutdown)
+
+        self.initVars()
+        self.startPublisherSubscribers()
+        # Lyapunov controller parameters
+        params = LyapunovParams(K_P=10., K_THETA=1., DT=0.01)
+        self.controller = LyapunovController(params=params)
+        self.robot_state = Robot()
+
+        rate = ros.Rate(100)  # 100Hz loop, adjust as needed
+        self.ctrl_v = -0.1
+        self.ctrl_omega = 0.1
+
+        while not ros.is_shutdown():
+            try:
+
+                # Add the control loop here!
+                # update kinematics
+
+                # self.robot_state.x = self.basePoseW[robot.u.sp_crd["LX"]]
+                # self.robot_state.y = self.basePoseW[robot.u.sp_crd["LY"]]
+                # self.robot_state.theta = self.basePoseW[robot.u.sp_crd["AZ"]]
+                # # print(f"pos X: {robot.x} Y: {robot.y} th: {robot.theta}")
+                #
+                # robot.des_x, robot.des_y, robot.des_theta, robot.v_d, robot.omega_d, robot.v_dot_d, robot.omega_dot_d, traj_finished = robot.traj.evalTraj(robot.time)
+                # if traj_finished:
+                #     break
+                # else:
+                #     self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, self.v_dot_d, self.omega_dot_d = self.trajectory.eval_trajectory(self.time)
+                #     self.des_theta, self.old_theta = unwrap_angle(self.des_theta, self.old_theta)
+                # self.ctrl_v, self.ctrl_omega  = self.controller.control_unicycle(self.robot_state, self.time, self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, False)
+                self.send_commands(self.ctrl_v, self.ctrl_omega)
+
+                # wait for synconization of the control loop
+                rate.sleep()
+                # to avoid issues of dt 0.0009999
+                self.time = np.round(self.time + np.array([conf.robot_params[self.robot_name]['dt']]),  4)
+
+                #print(f"[{self.robot_name}] running...")
+            except (ros.ROSInterruptException, ros.service.ServiceException):
+                break
+
+    def receive_reference(self, msg):
+        msg = Vector3()
+        self.des_x = msg.x
+        self.des_y = msg.y
+        self.des_theta = msg.z
+
+    def receive_pose(self, msg):
+        self.quaternion = np.array([
+            msg.pose.pose.orientation.x,
+            msg.pose.pose.orientation.y,
+            msg.pose.pose.orientation.z,
+            msg.pose.pose.orientation.w
+        ])
+        self.euler = np.array(euler_from_quaternion(self.quaternion))
+        #unwrap
+        self.euler, self.euler_old = unwrap_vector(self.euler, self.euler_old)
+        #
+        self.basePoseW[0] = msg.pose.pose.position.x
+        self.basePoseW[1] = msg.pose.pose.position.y
+        self.basePoseW[2] = msg.pose.pose.position.z
+        self.basePoseW[3] = self.euler[0]
+        self.basePoseW[4] = self.euler[1]
+        self.basePoseW[5] = self.euler[2]
+        #
+        self.baseTwistW[0] = msg.twist.twist.linear.x
+        self.baseTwistW[0] = msg.twist.twist.linear.y
+        self.baseTwistW[0] = msg.twist.twist.linear.z
+        self.baseTwistW[3] = msg.twist.twist.angular.x
+        self.baseTwistW[4] = msg.twist.twist.angular.y
+        self.baseTwistW[5] = msg.twist.twist.angular.z
+
+    def send_commands(self, liv_vel, ang_vel):
+        # No need to change the convention because in the HW interface we use our conventtion (see ros_impedance_contoller_xx.yaml)
+        msg = Twist()
+        msg.linear.x = liv_vel
+        msg.linear.y = 0
+        msg.linear.z = 0
+        msg.angular.x = 0
+        msg.angular.y = 0
+        msg.angular.z = ang_vel
+        self.command_pub.publish(msg)
+
+
+    def logData(self):
+        if (self.log_counter < conf.robot_params[self.robot_name]['buffer_size']):
+            self.des_state_log[0, self.log_counter] = self.des_x
+            self.des_state_log[1, self.log_counter] = self.des_y
+            self.des_state_log[2, self.log_counter] = self.des_theta
+            self.state_log[0, self.log_counter] = self.basePoseW[self.u.sp_crd["LX"]]
+            self.state_log[2, self.log_counter] = self.basePoseW[self.u.sp_crd["AZ"]]
+            self.basePoseW_log[:, self.log_counter] = self.basePoseW
+            self.baseTwistW_log[:, self.log_counter] = self.baseTwistW
+            self.time_log[self.log_counter] = self.time
+            self.log_counter += 1
+
+    def on_shutdown(self):
+        print(f"[{self.robot_name}] received shutdown signal.")
+        ros.signal_shutdown("killed")
+            
+def run_robot(robot_name):
+    ctrl = Controller(robot_name)
+    ctrl.start_controller()
+        
+                  
+if __name__ == '__main__':
+    
+    n_robots = 2
+    processes = []
+    
+    try:
+        # Start children
+        for robot in range(n_robots):
+            p = Process(target=run_robot, args=(f'limo{robot}',))
+            p.start()
+            processes.append(p)
+
+        # Keep parent alive until children exit
+        for p in processes:
+            p.join()
+
+    except KeyboardInterrupt:
+        print("\n[MAIN] Ctrl+C caught! Shutting down all robot controllers...")
+
+    finally:
+        # Always try to clean up children
+        for p in processes:
+            if p.is_alive():
+                p.terminate()
+                p.join()   #wait for process to exit
+                print(f"[MAIN] Terminated main process")
