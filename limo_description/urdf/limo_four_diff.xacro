@@ -106,42 +106,38 @@
 	    <xacro:limo_wheel_transmission wheel_prefix="limo${robot_id}/front_left" />
 	    <xacro:limo_wheel_transmission wheel_prefix="limo${robot_id}/rear_left" />
 	    <xacro:limo_wheel_transmission wheel_prefix="limo${robot_id}/rear_right" />
-	    
-	    <gazebo reference="limo${robot_id}_front_left_wheel">
-        <mu1>100</mu1>
-        <mu2>100</mu2>
+	   
+   <gazebo reference="limo${robot_id}/front_left_wheel_link">
+        <mu1>1.</mu1>
+        <mu2>1.</mu2>
         <kp>10000000.0</kp>
         <kd>1.0</kd>
-        <minDepth>0.01</minDepth>
-        <fdir1>1 0 0</fdir1>
-        <maxContacts value="64"/>
+        <maxVel>1.0</maxVel>
+	<maxContacts>1</maxContacts>
     </gazebo>
-    <gazebo reference="limo${robot_id}_front_right_wheel">
-        <mu1>100</mu1>
-        <mu2>100</mu2>
+    <gazebo reference="limo${robot_id}/front_right_wheel_link">
+        <mu1>1.</mu1>
+        <mu2>1.</mu2>
         <kp>10000000.0</kp>
         <kd>1.0</kd>
-        <minDepth>0.01</minDepth>
-        <fdir1>1 0 0</fdir1>
-        <maxContacts value="64"/>
+        <maxVel>1.0</maxVel>
+	<maxContacts>1</maxContacts>
     </gazebo>
-    <gazebo reference="limo${robot_id}_rear_left_wheel">
-        <mu1>100</mu1>
-        <mu2>100</mu2>
+    <gazebo reference="limo${robot_id}/rear_left_wheel_link">
+        <mu1>1.</mu1>
+        <mu2>1.</mu2>
         <kp>10000000.0</kp>
         <kd>1.0</kd>
-        <minDepth>0.01</minDepth>
-        <fdir1>1 0 0</fdir1>
-        <maxContacts value="64"/>
+        <maxVel>1.0</maxVel>
+	<maxContacts>1</maxContacts>
     </gazebo>
-    <gazebo reference="limo${robot_id}_rear_right_wheel">
-        <mu1>100</mu1>
-        <mu2>100</mu2>
+    <gazebo reference="limo${robot_id}/rear_right_wheel_link">
+        <mu1>1.</mu1>
+        <mu2>1.</mu2>
         <kp>10000000.0</kp>
         <kd>1.0</kd>
-        <minDepth>0.01</minDepth>
-        <fdir1>1 0 0</fdir1>
-        <maxContacts value="64"/>
+        <maxVel>1.0</maxVel>
+	<maxContacts>1</maxContacts>
     </gazebo>
 	    
 	
@@ -164,8 +160,8 @@
 		    <rightJoint>limo$(arg robot_id)/front_right_wheel</rightJoint>
 		    <rightJoint>limo$(arg robot_id)/rear_right_wheel</rightJoint>
 
-		    <wheelSeparation>0.172</wheelSeparation>
-		    <wheelDiameter>0.09</wheelDiameter>
+		    <wheelSeparation>0.164</wheelSeparation>
+		    <wheelDiameter>0.08</wheelDiameter>
 
 		    <!-- Topics are relative to the namespace above -->
 		    <commandTopic>cmd_vel</commandTopic>
