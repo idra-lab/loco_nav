@@ -110,7 +110,7 @@
    <gazebo reference="limo${robot_id}/front_left_wheel_link">
         <mu1>1.</mu1>
         <mu2>1.</mu2>
-        <kp>10000000.0</kp>
+        <kp>1000000.0</kp>
         <kd>1.0</kd>
         <maxVel>1.0</maxVel>
 	<maxContacts>1</maxContacts>
@@ -118,23 +118,23 @@
     <gazebo reference="limo${robot_id}/front_right_wheel_link">
         <mu1>1.</mu1>
         <mu2>1.</mu2>
-        <kp>10000000.0</kp>
+        <kp>1000000.0</kp>
         <kd>1.0</kd>
         <maxVel>1.0</maxVel>
 	<maxContacts>1</maxContacts>
     </gazebo>
     <gazebo reference="limo${robot_id}/rear_left_wheel_link">
-        <mu1>1.</mu1>
-        <mu2>1.</mu2>
-        <kp>10000000.0</kp>
+        <mu1>0.5</mu1> <!--DIRTY TRICK TO SOLVE ISSUE OF BAD TRACKING DUE TO FRICTION-->
+        <mu2>0.5</mu2>
+        <kp>1000000.0</kp>
         <kd>1.0</kd>
         <maxVel>1.0</maxVel>
 	<maxContacts>1</maxContacts>
     </gazebo>
     <gazebo reference="limo${robot_id}/rear_right_wheel_link">
-        <mu1>1.</mu1>
-        <mu2>1.</mu2>
-        <kp>10000000.0</kp>
+        <mu1>0.5</mu1> <!--DIRTY TRICK TO SOLVE ISSUE OF BAD TRACKING DUE TO FRICTION-->
+        <mu2>0.5</mu2>
+        <kp>1000000.0</kp>
         <kd>1.0</kd>
         <maxVel>1.0</maxVel>
 	<maxContacts>1</maxContacts>
@@ -149,19 +149,19 @@
 		  <plugin name="limo_diff" filename="libgazebo_ros_diff_drive.so">
 		    <!-- Put all ROS topics inside this namespace -->
 		    <ros>
-		      <namespace>limo$(arg robot_id)</namespace>
+		      <nameSpace>limo$(arg robot_id)</nameSpace>
 		    </ros>
 
 		    <updateRate>50</updateRate>
 
 		    <!-- EXACT joint names from your URDF (underscored) -->
 		    <leftJoint>limo$(arg robot_id)/front_left_wheel</leftJoint>
-		    <leftJoint>limo$(arg robot_id)/rear_left_wheel</leftJoint>
 		    <rightJoint>limo$(arg robot_id)/front_right_wheel</rightJoint>
-		    <rightJoint>limo$(arg robot_id)/rear_right_wheel</rightJoint>
+ 		    <!--leftJoint>limo$(arg robot_id)/rear_left_wheel</leftJoint--> <!--DIRTY TRICK TO SOLVE ISSUE OF BAD TRACKING DUE TO FRICTION-->
+ 		    <!--rightJoint>limo$(arg robot_id)/rear_right_wheel</rightJoint--> <!--DIRTY TRICK TO SOLVE ISSUE OF BAD TRACKING DUE TO FRICTION-->
 
 		    <wheelSeparation>0.164</wheelSeparation>
-		    <wheelDiameter>0.08</wheelDiameter>
+		    <wheelDiameter>0.09</wheelDiameter>
 
 		    <!-- Topics are relative to the namespace above -->
 		    <commandTopic>cmd_vel</commandTopic>

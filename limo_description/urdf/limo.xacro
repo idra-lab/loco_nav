@@ -14,11 +14,18 @@
                 </geometry>
             </visual>
             <collision>
+              <origin xyz="0 ${wheel_length/2} 0" rpy="1.57 0 0" />
+              <geometry>
+                  <cylinder length="${wheel_length}" radius="${wheel_radius}" />
+              </geometry>
+            </collision>
+            
+            <!--collision>
                   <origin xyz="0 0 0" rpy="0 0 0" />
               <geometry>
                   <mesh filename="file://$(find limo_description)/meshes/limo_optimal_wheels.dae" />
               </geometry>
-            </collision>
+            </collision-->
         </link>
 
         <joint name="${wheel_prefix}_wheel" type="continuous">
