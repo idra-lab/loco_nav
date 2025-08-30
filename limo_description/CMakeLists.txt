@@ -1,17 +1,26 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(limo_description)
 
-find_package(catkin REQUIRED COMPONENTS)
+find_package(catkin REQUIRED std_msgs message_generation COMPONENTS)
 
 
+
+add_message_files(
+  DIRECTORY
+  msg
+  FILES
+  Reference.msg
+)
+
+generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
-  CATKIN_DEPENDS rospy
+  CATKIN_DEPENDS rospy message_generation std_msgs
 )
 
 catkin_install_python(
   PROGRAMS
-    controller/spawn_controllers.py
+    scripts/spawn_controllers.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
@@ -20,11 +29,16 @@ install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
   PATTERN ".svn" EXCLUDE)
 
+install(DIRECTORY scripts/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts
+  PATTERN ".svn" EXCLUDE)
+
+install(DIRECTORY msg/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/msg
+  PATTERN ".svn" EXCLUDE)
 
 
-install(DIRECTORY controller/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/controller
-  PATTERN ".svn" EXCLUDE)  
+
   
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch

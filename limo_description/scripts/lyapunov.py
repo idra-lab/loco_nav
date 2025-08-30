@@ -1,18 +1,7 @@
 import numpy as np
 import math
-from base_controllers.utils.math_tools import unwrap_angle
-from base_controllers.tracked_robot.utils import constants
-from base_controllers.utils.math_tools import Math
-from scipy.optimize import fsolve
-
-def unwrap_angle(angle_meas, angle_old):
-    angle_unwrapped = angle_meas
-    while (angle_unwrapped < (angle_old - np.pi)):
-            angle_unwrapped += 2 * np.pi
-    while (angle_unwrapped > (angle_old + np.pi)):
-        angle_unwrapped -= 2 * np.pi
-    angle_old = angle_unwrapped
-    return angle_unwrapped, angle_old
+from math_tools import unwrap_angle
+from math_tools import Math
 
 class LyapunovParams:
     def __init__(self, K_P, K_THETA, DT=0.001, ESTIMATE_ALPHA_WITH_ACTUAL_VALUES = False):

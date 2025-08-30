@@ -1,32 +1,36 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Fri Nov  2 16:52:08 2018
 
 @author: mfocchi
 """
-
-from __future__ import print_function
+import matplotlib
+matplotlib.use('TkAgg')
 import rospy as ros
 import numpy as np
-from base_controllers.tracked_robot.velocity_generator import VelocityGenerator
-from base_controllers.tracked_robot.environment.trajectory import Trajectory, ModelsList
+from velocity_generator import VelocityGenerator
+from trajectory import Trajectory, ModelsList
 from multiprocessing import Process
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
-from geometry_msgs.msg import Vector3
+from limo_description.msg import Reference
 from tf.transformations import euler_from_quaternion
-from base_controllers.utils.math_tools import unwrap_vector
+from math_tools import unwrap_vector
 from matplotlib import pyplot as plt
 from termcolor import colored
 from lyapunov import LyapunovController, LyapunovParams, Robot, unwrap_angle
 import params as conf
 np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
+import argparse
+import sys
+
 
 class Controller():
 
     def __init__(self, robot_name="limo1"):
         self.robot_name = robot_name
-        self.DEBUG = True
+        self.DEBUG = False
 
     def initVars(self):
         self.basePoseW = np.zeros(6)
@@ -82,7 +86,7 @@ class Controller():
 
         self.sub_odom = ros.Subscriber("/" + self.robot_name + "/odom", Odometry, callback=self.receive_pose,
                                        queue_size=1, tcp_nodelay=True)
-        self.sub_reference = ros.Subscriber("/" + self.robot_name + "/ref", Vector3, callback=self.receive_reference,
+        self.sub_reference = ros.Subscriber("/" + self.robot_name + "/ref", Reference, callback=self.receive_reference,
                                        queue_size=1, tcp_nodelay=True)
 
     def start_controller(self):
@@ -91,7 +95,7 @@ class Controller():
         self.startPublisherSubscribers()
         self.initVars()
         # Lyapunov controller parameters
-        params = LyapunovParams(K_P=20., K_THETA=2., DT=conf.robot_params[self.robot_name]['dt'])
+        params = LyapunovParams(K_P=conf.robot_params[self.robot_name]['k_p'], K_THETA=conf.robot_params[self.robot_name]['k_th'], DT=conf.robot_params[self.robot_name]['dt'])
         self.controller = LyapunovController(params=params)
         self.robot_state = Robot()
         rate = ros.Rate(1/conf.robot_params[self.robot_name]['dt'])  # 100Hz loop, adjust as needed
@@ -135,15 +139,17 @@ class Controller():
 
 
 
-    def receive_reference(self, msg : Vector3):
-        if np.linalg.norm(np.array([msg.x, msg.y, msg.z]) - np.array([self.robot_state.x,self.robot_state.y, self.robot_state.theta])) > 1.5:
+    def receive_reference(self, msg : Reference):
+        if np.linalg.norm(np.array([msg.x_d, msg.y_d, msg.theta_d]) - np.array([self.robot_state.x,self.robot_state.y, self.robot_state.theta])) > 1.5:
             print(colored("Reference is too far from actual state, negleting it", "red"))
             return
         else:
-            self.des_x = msg.x
-            self.des_y = msg.y
-            self.des_theta = msg.z
-            print(colored(f"received {self.robot_name} des_x: {self.des_x}, des_y: {self.des_y}"), "red")
+            self.des_x = msg.x_d
+            self.des_y = msg.y_d
+            self.des_theta = msg.theta_d
+            self.v_d = msg.v_d
+            self.omega_d = msg.omega_d
+            print(colored(f"received {self.robot_name} des_x: {self.des_x}, des_y: {self.des_y}, des_theta: {self.des_theta}", "red"))
 
     def receive_pose(self, msg):
         self.quaternion = np.array([
@@ -197,7 +203,7 @@ class Controller():
 
 
     def plotData(self):
-
+        print("AAA")
         # xy plot
         plt.figure()
         plt.title(f'{self.robot_name}')
@@ -272,16 +278,26 @@ class Controller():
 def run_robot(robot_name):
     ctrl = Controller(robot_name)
     ctrl.start_controller()
-        
+
+def parse_args():
+    # Remove ROS remappings (e.g., __name:=) so argparse won't choke
+    argv = ros.myargv(argv=sys.argv)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--n_robots", type=int, default=2)
+    return parser.parse_args(argv[1:])
+
                   
 if __name__ == '__main__':
-    
-    n_robots = 2
+    args = parse_args()
+    print(f"[spawn_controllers] Starting with {args.n_robots} robots")
+
+
     processes = []
     
     try:
         # Start children
-        for robot in range(n_robots):
+        for robot in range(args.n_robots):
             p = Process(target=run_robot, args=(f'limo{robot}',))
             p.start()
             processes.append(p)
