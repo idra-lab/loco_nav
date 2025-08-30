@@ -26,8 +26,10 @@
   <arg name="yaw_pos1" default="0.0" />
 
 
-<arg name="start_controller" default="true" />
 
+<arg name="start_controller" default="false" />
+
+<arg name="debug" default="false" />
 
   <!-- todo-->
   <arg name="shelfino_init_x" default="0.0" />
@@ -117,8 +119,10 @@
   </group>
 
 
+
+
 <group if="$(arg start_controller)">
-  <node pkg="limo_description" type="spawn_controllers.py" name="controllers" output="screen"  args="--n_robots 2"/>
+  <node pkg="limo_description" type="spawn_controllers.py" name="controllers" output="screen"  args="--n_robots 2 --debug $(arg debug)"/>
 </group>
 
 

@@ -1,10 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Fri Nov  2 16:52:08 2018
 
 @author: mfocchi
 """
+import time
+
 import matplotlib
 matplotlib.use('TkAgg')
 import rospy as ros
@@ -28,9 +30,9 @@ import sys
 
 class Controller():
 
-    def __init__(self, robot_name="limo1"):
+    def __init__(self, robot_name="limo1", debug=False):
         self.robot_name = robot_name
-        self.DEBUG = False
+        self.DEBUG = debug
 
     def initVars(self):
         self.basePoseW = np.zeros(6)
@@ -203,7 +205,7 @@ class Controller():
 
 
     def plotData(self):
-        print("AAA")
+
         # xy plot
         plt.figure()
         plt.title(f'{self.robot_name}')
@@ -275,30 +277,43 @@ class Controller():
         print(f"[{self.robot_name}] received shutdown signal.")
         ros.signal_shutdown("killed")
             
-def run_robot(robot_name):
-    ctrl = Controller(robot_name)
+def run_robot(robot_name, debug):
+    ctrl = Controller(robot_name, debug)
     ctrl.start_controller()
 
 def parse_args():
     # Remove ROS remappings (e.g., __name:=) so argparse won't choke
     argv = ros.myargv(argv=sys.argv)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_robots", type=int, default=2)
+    parser.add_argument("--debug", type=str2bool, default=False, metavar="{true|false}")
     return parser.parse_args(argv[1:])
 
-                  
+# --- helper for parsing "true/false" strings ---
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    v = v.lower()
+    if v in ("yes", "y", "true", "t", "1"):
+        return True
+    elif v in ("no", "n", "false", "f", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("expected a boolean (true/false)")
+
 if __name__ == '__main__':
-    args = parse_args()
-    print(f"[spawn_controllers] Starting with {args.n_robots} robots")
+    main_args = parse_args()
 
+    #main_args.debug = True
 
+    print(colored(f"[spawn_controllers] Starting with {main_args.n_robots} robots","red"))
+    print(colored(f"[spawn_controllers] Debug {main_args.debug}","red"))
     processes = []
     
     try:
         # Start children
-        for robot in range(args.n_robots):
-            p = Process(target=run_robot, args=(f'limo{robot}',))
+        for robot in range(main_args.n_robots):
+            p = Process(target=run_robot, args=(f'limo{robot}', main_args.debug,))
             p.start()
             processes.append(p)
 

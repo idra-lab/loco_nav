@@ -14,12 +14,20 @@ add_message_files(
 
 generate_messages(DEPENDENCIES std_msgs)
 
+
 catkin_package(
   CATKIN_DEPENDS rospy message_generation std_msgs
 )
 
 catkin_install_python(
   PROGRAMS
+    scripts/lyapunov.py
+    scripts/math_tools.py
+    scripts/utils.py
+    scripts/params.py
+    scripts/trajectory.py
+    scripts/unicycle.py
+    scripts/velocity_generator.py
     scripts/spawn_controllers.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
@@ -29,9 +37,6 @@ install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
   PATTERN ".svn" EXCLUDE)
 
-install(DIRECTORY scripts/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts
-  PATTERN ".svn" EXCLUDE)
 
 install(DIRECTORY msg/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/msg
