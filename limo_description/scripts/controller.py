@@ -26,7 +26,7 @@ import params as conf
 np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
 import argparse
 import sys
-
+from communication_utils import getInitialStateFromOdom
 
 class Controller():
 
@@ -60,20 +60,10 @@ class Controller():
         self.des_state_log = np.full(
             (3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
 
-        try:
-            odom0 = ros.wait_for_message("/" + self.robot_name + "/odom", Odometry, timeout=10.0)
-        except ros.ROSException:
-            ros.logerr(f"Timed out waiting for /{self.robot_name}/odom")
-            return
-
-        p0 = odom0.pose.pose.position
-        q0 = odom0.pose.pose.orientation
-        yaw0 = euler_from_quaternion([q0.x, q0.y, q0.z, q0.w])[2]
-        print(colored(f"{self.robot_name}: Init. desired state from first /odom: x0: {p0.x},y0: {p0.y},yaw0: {yaw0}", "red"))
-
+        p0_x, p0_y, yaw0 = getInitialStateFromOdom(self.robot_name)
         #initialize with actual state
-        self.des_x = p0.x
-        self.des_y = p0.y
+        self.des_x = p0_x
+        self.des_y = p0_y
         self.des_theta = yaw0
 
         vel_gen = VelocityGenerator(simulation_time=20., DT=conf.robot_params[self.robot_name]['dt'])
@@ -142,9 +132,12 @@ class Controller():
 
 
     def receive_reference(self, msg : Reference):
-        if np.linalg.norm(np.array([msg.x_d, msg.y_d, msg.theta_d]) - np.array([self.robot_state.x,self.robot_state.y, self.robot_state.theta])) > 1.5:
-            print(colored("Reference is too far from actual state, negleting it", "red"))
-            return
+        # if np.linalg.norm(np.array([msg.x_d, msg.y_d]) - np.array([self.robot_state.x,self.robot_state.y])) > 1.0:
+        #     print(colored(f"Received reference {self.robot_name}:{self.des_x},{self.des_y} is too far from actual state, negleting it", "red"))
+        #     return
+        #
+        if msg.plan_finished:
+            self.plotData()
         else:
             self.des_x = msg.x_d
             self.des_y = msg.y_d
@@ -152,6 +145,7 @@ class Controller():
             self.v_d = msg.v_d
             self.omega_d = msg.omega_d
             print(colored(f"received {self.robot_name} des_x: {self.des_x}, des_y: {self.des_y}, des_theta: {self.des_theta}, des_v: {self.v_d}, des_omega: {self.omega_d}", "red"))
+
 
     def receive_pose(self, msg):
         self.quaternion = np.array([

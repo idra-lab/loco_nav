@@ -30,6 +30,7 @@ catkin_install_python(
     scripts/velocity_generator.py
     scripts/controller.py
     scripts/spawn_controllers.py
+    scripts/communication_utils.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   

@@ -7,7 +7,6 @@ Panels:
         - /Global Options1
         - /RobotModel1
         - /RobotModel2
-        - /RobotModel2/Status1
         - /MarkerArray1
         - /PoseArray1
       Splitter Ratio: 0.5
@@ -308,7 +307,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 13.405982971191406
+      Distance: 27.937774658203125
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -316,17 +315,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.06831105798482895
-        Y: 3.7117667198181152
-        Z: -0.9149600863456726
+        X: 0.31225648522377014
+        Y: -1.6699315309524536
+        Z: -2.5387001037597656
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0147963762283325
+      Pitch: 1.5447959899902344
       Target Frame: <Fixed Frame>
-      Yaw: 5.768604278564453
+      Yaw: 4.713603973388672
     Saved: ~
 Window Geometry:
   Displays:
@@ -344,5 +343,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1717
-  X: 430
-  Y: 27
+  X: 4161
+  Y: 517
