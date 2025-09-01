@@ -28,6 +28,7 @@ catkin_install_python(
     scripts/trajectory.py
     scripts/unicycle.py
     scripts/velocity_generator.py
+    scripts/controller.py
     scripts/spawn_controllers.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
