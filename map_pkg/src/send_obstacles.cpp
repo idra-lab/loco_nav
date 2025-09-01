@@ -79,13 +79,13 @@ public:
     if (!nh_.getParam("/_/send_obstacles/ros__parameters/vect_dim_y",data.vect_dim_y))data.vect_dim_y.clear();
 
     // Print parameters values
-    ROS_ERROR("Parameters:");
-    ROS_ERROR("vect_type: %s", to_string(data.vect_type).c_str());
-    ROS_ERROR("vect_x: %s",    to_string(data.vect_x).c_str());
-    ROS_ERROR("vect_y: %s",    to_string(data.vect_y).c_str());
-    ROS_ERROR("vect_yaw: %s",  to_string(data.vect_yaw).c_str());
-    ROS_ERROR("vect_dim_x: %s",to_string(data.vect_dim_x).c_str());
-    ROS_ERROR("vect_dim_y: %s",to_string(data.vect_dim_y).c_str());
+    ROS_INFO("Parameters:");
+    ROS_INFO("vect_type: %s", to_string(data.vect_type).c_str());
+    ROS_INFO("vect_x: %s",    to_string(data.vect_x).c_str());
+    ROS_INFO("vect_y: %s",    to_string(data.vect_y).c_str());
+    ROS_INFO("vect_yaw: %s",  to_string(data.vect_yaw).c_str());
+    ROS_INFO("vect_dim_x: %s",to_string(data.vect_dim_x).c_str());
+    ROS_INFO("vect_dim_y: %s",to_string(data.vect_dim_y).c_str());
 
     if (!equal_sizes({data.vect_type.size(), data.vect_x.size(), data.vect_y.size(),
                       data.vect_yaw.size(), data.vect_dim_x.size(), data.vect_dim_y.size()}))
