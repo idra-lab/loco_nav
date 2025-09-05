@@ -31,6 +31,8 @@ catkin_install_python(
     scripts/controller.py
     scripts/spawn_controllers.py
     scripts/communication_utils.py
+    scripts/planner.py
+    scripts/planners/rrt.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
@@ -44,6 +46,9 @@ install(DIRECTORY msg/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/msg
   PATTERN ".svn" EXCLUDE)
 
+install(DIRECTORY scripts/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts
+  PATTERN ".svn" EXCLUDE)
 
 
   

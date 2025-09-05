@@ -64,6 +64,18 @@ rostopic pub /limo1/ref limo_description/Reference "{x_d: 0.5, y_d: 0.0, theta_d
 roslaunch limo_description multiple_robots.launch start_controllers:=true debug:=true
 ```
 
+8. For debug mode (2 robots follow a predefined trajectory):
+
+```
+rostopic pub /limo1/ref limo_description/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
+```
+
+7. To test an RRT planner
+
+```
+roslaunch limo_description planner.py
+```
+
 
 
 ### IDE Pycharm

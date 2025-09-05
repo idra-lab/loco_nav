@@ -7,7 +7,7 @@ import math
 from geometry_msgs.msg import Polygon, PoseArray
 from obstacles_msgs.msg import ObstacleArrayMsg
 from limo_description.msg import Reference   # <-- your custom message
-from rrt import RRT
+from planners.rrt import RRT
 import params as conf
 from termcolor import  colored
 import sys
@@ -181,7 +181,7 @@ class Planner:
 # ---------- Main ----------
 if __name__ == "__main__":
     rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
-    planner = Planner(  robot_radius=0.2, v_d=0.1, robot_name="limo0", debug=True)
+    planner = Planner(  robot_radius=0.2, v_d=0.2, robot_name="limo0", debug=False)
 
     while not rospy.is_shutdown():
         # be sure you have received all messages
