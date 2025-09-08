@@ -146,15 +146,14 @@
 	
         	
 	<gazebo>
-		  <plugin name="limo_diff" filename="libgazebo_ros_diff_drive.so">
+		
+		  <disabled_plugin name="diff_drive_controller" filename="libgazebo_ros_diff_drive.so">
 		    <!-- Put all ROS topics inside this namespace -->
 		    <ros>
 		      <nameSpace>limo$(arg robot_id)</nameSpace>
 		    </ros>
-
 		    <updateRate>50</updateRate>
-
-		    <!-- EXACT joint names from your URDF (underscored) -->
+	 
 		    <leftJoint>limo$(arg robot_id)/front_left_wheel</leftJoint>
 		    <rightJoint>limo$(arg robot_id)/front_right_wheel</rightJoint>
  		    <!--leftJoint>limo$(arg robot_id)/rear_left_wheel</leftJoint--> <!--DIRTY TRICK TO SOLVE ISSUE OF BAD TRACKING DUE TO FRICTION-->
@@ -177,7 +176,46 @@
 		         
 		    <publishWheelJointState>false</publishWheelJointState>    
 		    <publishWheelTF>false</publishWheelTF>
+		  </disabled_plugin>
+		  
+		
+			  
+	        <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
+		    <ros>
+		      <nameSpace>limo$(arg robot_id)</nameSpace>
+		    </ros>
+		    <updateRate>100.0</updateRate>
+		    
+		    <leftFrontJoint>limo${robot_id}/front_left_wheel</leftFrontJoint>
+		    <rightFrontJoint>limo${robot_id}/front_right_wheel</rightFrontJoint>
+		    <leftRearJoint>limo${robot_id}/rear_left_wheel</leftRearJoint>
+		    <rightRearJoint>limo${robot_id}/rear_right_wheel</rightRearJoint>
+		    
+		    <wheelSeparation>0.164</wheelSeparation>
+		    <wheelDiameter>0.09</wheelDiameter>
+		    
+	            <robotBaseFrame>limo${robot_id}/base_link</robotBaseFrame>
+		    <odometryFrame>limo$(arg robot_id)/odom</odometryFrame>
+		    
+		    <torque>50</torque>
+		    
+		    
+		    <!-- Topics are relative to the namespace above -->
+		    <commandTopic>cmd_vel</commandTopic>
+	 
+		    <odometryTopic>odom</odometryTopic>
+	         
+		    <broadcastTF>true</broadcastTF>
+		       <covariance_x>0.000100</covariance_x>
+            		<covariance_y>0.000100</covariance_y>
+            		<covariance_yaw>0.010000</covariance_yaw>
+		   
 		  </plugin>
+		  
+	      
+		  
+		  
+		  
 		  
 		  
 		  <!-- Generic publisher for ALL joints in the model -->
