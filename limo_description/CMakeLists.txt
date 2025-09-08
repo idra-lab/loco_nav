@@ -31,7 +31,7 @@ catkin_install_python(
     scripts/controller.py
     scripts/spawn_controllers.py
     scripts/communication_utils.py
-    scripts/planner.py
+    scripts/planner_rrt.py
     scripts/planners/rrt.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

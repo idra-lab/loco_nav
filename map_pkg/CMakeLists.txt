@@ -55,6 +55,13 @@ target_link_libraries(send_victims ${catkin_LIBRARIES})
 target_link_libraries(send_borders ${catkin_LIBRARIES})
 target_link_libraries(send_timeout ${catkin_LIBRARIES})
 
+
+catkin_install_python(PROGRAMS
+  scripts/delete_full_config.sh
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+
 install(TARGETS send_obstacles send_gates send_victims send_borders send_timeout
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

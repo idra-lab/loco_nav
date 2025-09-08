@@ -15,7 +15,7 @@ import rosnode
 import threading
 from communication_utils import getInitialStateFromOdom
 
-class Planner:
+class RRTPlanner:
     def __init__(self, robot_radius=0.2, v_d=0.1, robot_name="limo0", debug = False):
         self.robot_name = robot_name
         self.robot_radius = robot_radius
@@ -165,6 +165,9 @@ class Planner:
                     self.ref_pub.publish(ref)
                     if self.DEBUG:
                         print(f"Reference: {ref.x_d}, {ref.y_d}, {ref.theta_d}")
+
+
+                    #TODO do it with timer rather than with threades https://chatgpt.com/c/68b5915d-3b40-832b-a7b3-ad92f88926b7
                     try:
                         self.rate.sleep()  # sleep per point
                     except rospy.ROSInterruptException:
@@ -181,7 +184,7 @@ class Planner:
 # ---------- Main ----------
 if __name__ == "__main__":
     rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
-    planner = Planner(  robot_radius=0.2, v_d=0.2, robot_name="limo0", debug=False)
+    planner = RRTPlanner(  robot_radius=0.2, v_d=0.2, robot_name="limo0", debug=False)
 
     while not rospy.is_shutdown():
         # be sure you have received all messages

@@ -1,7 +1,6 @@
 """
 Path planning Sample Code with Randomized Rapidly-Exploring Random Trees (RRT)
 
-author: AtsushiSakai(@Atsushi_twi)
 """
 
 import math                    # math functions (sqrt, hypot, cos, sin, atan2, etc.)
@@ -284,11 +283,15 @@ class RRT:
         theta = math.atan2(dy, dx)
         return d, theta
 
+if __name__ == '__main__':
 
-def main(gx=6.0, gy=10.0):
+    # Goal
+    gx=6.0
+    gy=10.0
     print("start " + __file__)  # show which file is running (useful when imported)
 
     # ====Search Path with RRT====
+    # obstacles are all cylindric with centerx, centery, radius tuples
     obstacleList = [(5, 5, 1), (3, 6, 2), (3, 8, 2), (3, 10, 2), (7, 5, 2),
                     (9, 5, 2), (8, 10, 1)]  # [x, y, radius] circular obstacles
     # Set Initial parameters
@@ -316,5 +319,3 @@ def main(gx=6.0, gy=10.0):
             plt.pause(0.01)  # Need for Mac (ensures render)
             plt.show()       # keep the plot window open
 
-if __name__ == '__main__':
-    main()  # invoke demo with default goal
