@@ -5,28 +5,26 @@ Created on Fri Nov  2 16:52:08 2018
 
 @author: mfocchi
 """
-import time
 
 import matplotlib
 matplotlib.use('TkAgg')
 import rospy as ros
 import numpy as np
-from velocity_generator import VelocityGenerator
-from trajectory import Trajectory, ModelsList
-from multiprocessing import Process
+from utils.velocity_generator import VelocityGenerator
+from utils.trajectory_generator import Trajectory, ModelsList
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from limo_description.msg import Reference
 from tf.transformations import euler_from_quaternion
-from math_tools import unwrap_vector
+from utils.math_tools import unwrap_vector, unwrap_angle
 from matplotlib import pyplot as plt
 from termcolor import colored
-from lyapunov import LyapunovController, LyapunovParams, Robot, unwrap_angle
+from controllers.lyapunov import LyapunovController, LyapunovParams, Robot
 import params as conf
 np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
 import argparse
 import sys
-from communication_utils import getInitialStateFromOdom
+from utils.communication_utils import getInitialStateFromOdom
 
 class Controller():
 

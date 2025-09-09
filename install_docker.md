@@ -67,8 +67,8 @@ $ ./install_docker.sh
     source /opt/ros/noetic/setup.bash
     source $HOME/ros_ws/install/setup.bash
     export PATH=/opt/openrobots/bin:$PATH
-    export LOCOSIM_DIR=$HOME/ros_ws/src/loco_nav
-    export PYTHONPATH=/opt/openrobots/lib/python3.8/site-packages:$LOCOSIM_DIR/robot_control:$PYTHONPATH
+    export LOCONAV_DIR=$HOME/ros_ws/src/loco_nav
+    export PYTHONPATH=/opt/openrobots/lib/python3.8/site-packages:$LOCONAV_DIR/limo_description/loco_nav/scripts:$PYTHONPATH
     export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/opt/openrobots/share/
     ```
 

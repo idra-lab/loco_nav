@@ -21,18 +21,21 @@ catkin_package(
 
 catkin_install_python(
   PROGRAMS
-    scripts/lyapunov.py
-    scripts/math_tools.py
-    scripts/utils.py
+    scripts/controllers/lyapunov.py
+    scripts/utils/math_tools.py
+    scripts/utils/utils.py
     scripts/params.py
-    scripts/trajectory.py
+    scripts/utils/trajectory_generator.py
     scripts/unicycle.py
-    scripts/velocity_generator.py
+    scripts/utils/velocity_generator.py
     scripts/controller.py
     scripts/spawn_controllers.py
-    scripts/communication_utils.py
-    scripts/planner_rrt.py
+    scripts/utils/communication_utils.py
+    scripts/planner_base.py
+    scripts/planner_rrt.py    
+    scripts/planner_voronoi.py
     scripts/planners/rrt.py
+    scripts/planners/dubins.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
@@ -50,6 +53,12 @@ install(DIRECTORY scripts/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts
   PATTERN ".svn" EXCLUDE)
 
+
+
+
+install(DIRECTORY scripts/utils
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
   
 install(DIRECTORY launch/

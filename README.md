@@ -12,7 +12,7 @@ for the course of Robot Planning and applications.
 
 # Installing the code
 
-To install natively the code follow these detailed installation [instructions](https://github.com/mfocchi/tracked_robot_simulator/tree/master/install_native.md). However, we strongly suggest to install a docker image to avoid  compatibility issues. To see how to install the docker image follow these [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_docker.md). 
+We strongly suggest to install a docker image to avoid  compatibility issues. To see how to install the docker image follow these [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_docker.md). 
 
 
 

@@ -1,8 +1,8 @@
 /**/send_obstacles:
   ros__parameters:
     n_obstacles: 3                                # Number of RANDOM obstacles to be spawned
-    no_cylinders: false                           # If true, no cylinders will be spawned
-    no_boxes: true                               # If true, no boxes will be spawned
+    no_cylinders: true                           # If true, no cylinders will be spawned
+    no_boxes: false                               # If true, no boxes will be spawned
     max_size: 1.0                                 # Maximum size of the random obstacles
     min_size: 0.5                                 # Minimum size of the random obstacles
     vect_type: [] #["cylinder", "box", "box"]     # Type of the obstacles to be spawned, either "cylinder" or "box"

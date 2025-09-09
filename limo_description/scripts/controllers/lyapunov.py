@@ -1,7 +1,7 @@
 import numpy as np
 import math
-from math_tools import unwrap_angle
-from math_tools import Math
+from utils.math_tools import unwrap_angle
+from utils.math_tools import Math
 
 class LyapunovParams:
     def __init__(self, K_P, K_THETA, DT=0.001, ESTIMATE_ALPHA_WITH_ACTUAL_VALUES = False):

@@ -8,7 +8,7 @@ Created on Tue Jun  5 09:43:27 2018
 import numpy as np
 import scipy as sp
 import math as math
-from utils import Utils
+from utils.utils import Utils
 
 class LineCoeff2d:
     def __init__(self):

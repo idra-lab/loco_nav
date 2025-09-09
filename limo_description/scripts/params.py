@@ -4,7 +4,7 @@ robot_params = {}
 
 robot_params['limo0'] ={'dt': 0.01,
                          'k_p': 10.,
-                         'k_th': 2,
+                         'k_th': 5,
                          'buffer_size': 50000}
 
 robot_params['limo1'] = {'dt': 0.01,
