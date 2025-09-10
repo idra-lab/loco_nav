@@ -33,16 +33,18 @@ class RRTPlanner(PlannerBase):
             robot_radius=self.params.robot_radius
         )
         path = rrt.planning(animation=True)
+        # Reverse path to start->goal order
+        path = path[::-1]
         return path
 
 # ---------- Main ----------
 if __name__ == "__main__":
     rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
-    planner = RRTPlanner(robot_radius=0.2, v_max=0.1, curvature_max=4.0, robot_name="limo0", debug=False)
+    planner = RRTPlanner(robot_radius=0.2, v_max=0.2, curvature_max=4.0, robot_name="limo0", debug=False)
 
     while not rospy.is_shutdown():
         # be sure you have received all messages
-        if not planner.computed_path and planner.goal_ready and planner.map_ready and planner.map_ready:
+        if not planner.computed_path and planner.goal_ready and planner.obstacles_ready and planner.map_ready:
             planner.path = planner.plan_path()
             planning_done = planner.send_path(planner.path)
             if planning_done:

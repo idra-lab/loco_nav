@@ -29,7 +29,7 @@ import pathlib
 
 # Allow importing sibling package (for DijkstraSearch)
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
-from dijkstra_search import DijkstraSearch
+from planners.dijkstra_search import DijkstraSearch
 
 # Toggle to visualize steps
 show_animation = True
@@ -47,23 +47,19 @@ class VoronoiRoadMapPlanner:
         may cut through clutter or hurt numerical stability.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, start, goal, obstacle_list, robot_radius) -> None:
         # Tuning parameters
         self.N_KNN = 10           # number of neighbors to try per sampled point
         self.MAX_EDGE_LEN = 30.0  # [m] maximum edge length allowed
+        self.start = start
+        self.goal = goal
+        self.obstacle_list = obstacle_list
+        self.robot_radius = robot_radius
 
-    def planning(
-        self,
-        sx: float,
-        sy: float,
-        gx: float,
-        gy: float,
-        ox: list[float],
-        oy: list[float],
-        robot_radius: float,
-        show_animation=True
-    ) -> tuple[list[float], list[float]]:
+    def planning(self,  show_animation=True):
+
         """Plan a path from (sx, sy) to (gx, gy).
+
 
         Parameters
         ----------
@@ -71,7 +67,7 @@ class VoronoiRoadMapPlanner:
             Start coordinates.
         gx, gy : float
             Goal coordinates.
-        ox, oy : list[float]
+        obstacle_list : list[float]
             Obstacle point clouds (x and y lists).
         robot_radius : float
             Circular robot radius used for conservative collision checks.
@@ -81,24 +77,40 @@ class VoronoiRoadMapPlanner:
         (rx, ry) : tuple[list[float], list[float]]
             Path coordinates if found. Empty lists if no path.
         """
+        sx = self.start[0]
+        sy = self.start[1]
+        gx = self.goal[0]
+        gy = self.goal[1]
+        ox = [p[0] for p in self.obstacle_list ]
+        oy = [p[1] for p in self.obstacle_list ]
+
+
+
         # KD-tree accelerates nearest-obstacle distance queries used in collision checks
         obstacle_tree = cKDTree(np.vstack((ox, oy)).T)
 
         # 1) Sample candidate nodes from Voronoi diagram of obstacles (+ start/goal)
         sample_x, sample_y = self.voronoi_sampling(sx, sy, gx, gy, ox, oy)
         if show_animation:  # pragma: no cover (skip in tests)
-            plt.plot(sample_x, sample_y, ".b", label="Voronoi vertices")
-
+            plt.figure()
+            plt.plot(ox, oy, ".k", label="obstacles")
+            plt.plot(sx, sy, "ob", markersize=10, label="start")
+            plt.plot(gx, gy, "or", markersize=10, label="goal")
+            plt.grid(True)
+            plt.plot(sample_x, sample_y, ".g", label="Voronoi vertices")
+            plt.axis("equal")
+            plt.legend(loc="best")
         # 2) Build roadmap edges between nodes (subject to collision-free straight lines)
         road_map_info = self.generate_road_map_info(
-            sample_x, sample_y, robot_radius, obstacle_tree
+            sample_x, sample_y, self.robot_radius, obstacle_tree
         )
 
         # 3) Run Dijkstra over the roadmap (DijkstraSearch accepts the samples and adjacency)
         rx, ry = DijkstraSearch(show_animation).search(
             sx, sy, gx, gy, sample_x, sample_y, road_map_info
         )
-        return rx, ry
+        path = np.column_stack((rx, ry))
+        return path
 
     def is_collision(
         self,
@@ -236,9 +248,9 @@ if __name__ == "__main__":
     print(__file__ + " start!!")
 
     # Start and goal
-    sx, sy = 10.0, 10.0  # [m]
-    gx, gy = 50.0, 50.0  # [m]
-
+    start = np.array([10.0, 10.0, 0.])  # [m]
+    goal = np.array([50.0, 50.0, 0.]) # [m]
+    obstacle_list = []
     robot_size = 5.0  # [m] (used as the collision-check radius)
 
     # Construct a toy map with axis-aligned walls and two internal walls
@@ -247,39 +259,33 @@ if __name__ == "__main__":
 
     # Outer rectangle boundary
     for i in range(60):
-        ox.append(float(i)); oy.append(0.0)
+        obstacle_list.append([float(i), 0.0])
     for i in range(60):
-        ox.append(60.0); oy.append(float(i))
+        obstacle_list.append([60.0, float(i)])
     for i in range(61):
-        ox.append(float(i)); oy.append(60.0)
+        obstacle_list.append([float(i), 60.0])
     for i in range(61):
-        ox.append(0.0); oy.append(float(i))
+        obstacle_list.append([0.0, float(i)])
 
     # Internal vertical wall (left)
     for i in range(40):
-        ox.append(20.0); oy.append(float(i))
+        obstacle_list.append([20.0, float(i)])
 
     # Internal diagonal wall (right)
     for i in range(40):
-        ox.append(40.0); oy.append(60.0 - i)
+        obstacle_list.append([40.0, 60.0 - i])
 
-    if show_animation:  # pragma: no cover
-        plt.figure()
-        plt.plot(ox, oy, ".k", label="obstacles")
-        plt.plot(sx, sy, "^r", label="start")
-        plt.plot(gx, gy, "^c", label="goal")
-        plt.grid(True)
-        plt.axis("equal")
-        plt.legend(loc="best")
+    voronoi_planner = VoronoiRoadMapPlanner(start, goal, obstacle_list,  robot_size)
 
     # Plan
-    rx, ry = VoronoiRoadMapPlanner().planning(sx, sy, gx, gy, ox, oy, robot_size, show_animation = show_animation)
+    path = voronoi_planner.planning(show_animation = show_animation)
 
-    assert rx, "Cannot find path"
+    assert path.size > 0, "Cannot find path"
 
     if show_animation:  # pragma: no cover
-        plt.plot(rx, ry, "-r", label="path")
+        plt.plot(path[:,0], path[:,1], "-r", label="path")
         plt.pause(0.1)
         plt.show()
+
 
 

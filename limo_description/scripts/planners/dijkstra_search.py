@@ -9,7 +9,7 @@ author: Atsushi Sakai (@Atsushi_twi)
 import matplotlib.pyplot as plt
 import math
 import numpy as np
-
+import sys
 
 class DijkstraSearch:
     class Node:
@@ -58,7 +58,8 @@ class DijkstraSearch:
                 goal_node.cost = current_node.cost
                 break
             elif not open_set:
-                print("Cannot find path")
+                print("Djkstra: Cannot find path")
+                sys.exit()
                 break
 
             current_id = min(open_set, key=lambda o: open_set[o].cost)

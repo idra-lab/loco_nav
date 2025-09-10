@@ -25,7 +25,9 @@ class PlannerParamsBase:
 
 class PlannerBase:
     def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=0.1, robot_name="limo0", debug = False):
+        self.robot_radius = robot_radius
         self.robot_name = robot_name
+
         self.params = PlannerParamsBase(robot_radius, v_max, curvature_max)
         self.dt = conf.robot_params[self.robot_name]['dt']     # time step for discretization
         self.REFERENCE_TYPE = 'DUBINS' #'PIECE_WISE', 'DUBINS' , 'DUBINS_MULTIPOINT'
@@ -43,7 +45,7 @@ class PlannerBase:
             sys.exit()
 
         self.obstacle_list = []
-        self.obstacles_ready = None
+        self.obstacles_ready = False
         self.map_ready = False
         self.goal_ready = False
         self.computed_path = False
@@ -130,22 +132,21 @@ class PlannerBase:
         return path
 
     def send_path(self, path):
-        if self.path is None:
+        if path is None:
             rospy.logwarn("No path found.")
         else:
-            # Reverse path to start->goal order
-            self.path = self.path[::-1]
-            rospy.loginfo("Path found with %d waypoints.", len(self.path))
+
+            rospy.loginfo("Path found with %d waypoints.", len(path))
             # ---- Plot first (non-blocking) ----
-            plt.plot([x for (x, y) in self.path],
-                     [y for (x, y) in self.path], '-r')
+            plt.plot([x for (x, y) in path],
+                     [y for (x, y) in path], '-r')
             plt.grid(True)
             plt.draw()
 
             # compute reference from path
-            self.reference = self.computeReferenceFromPath(self.path)
-
-            plt.plot(self.reference[:, 0], self.reference[:, 1], "+k")
+            self.reference = self.computeReferenceFromPath(path)
+            if self.DEBUG:
+                plt.plot(self.reference[:, 0], self.reference[:, 1], "+k")
             plt.show(block=False)
             threading.Thread(target=self.publish_reference, args=(self.reference,), daemon=True).start()
         return True
@@ -174,7 +175,12 @@ class PlannerBase:
                     theta_d = theta0 + t * (theta1 - theta0)
                     reference.append(np.array([x_d, y_d, theta_d, self.params.v_max, 0]))
                 theta0 = theta1
-            reference = np.vstack(reference)
+
+            if len(reference) > 1:
+                reference = np.vstack(reference)
+            else:
+                print(colored("you are already in target","red"))
+                sys.exit()
 
         elif self.REFERENCE_TYPE == 'DUBINS':
             curve,curvatures, lengths  = dubins_shortest_path(self.start[0], self.start[1], self.start[2], self.goal[0], self.goal[1], self.goal[2], self.params.Kmax)

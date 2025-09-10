@@ -1,57 +1,83 @@
 #!/usr/bin/env python
 import matplotlib
 matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 import rospy
+from planner_base import PlannerParamsBase, PlannerBase
+from planners.voronoi import VoronoiRoadMapPlanner
 import math
-from geometry_msgs.msg import Polygon, PoseArray
-from obstacles_msgs.msg import ObstacleArrayMsg
-from limo_description import Reference   # <-- your custom message
-from planners.rrt import RRT
-import params as conf
-from termcolor import  colored
-import sys
-import rosnode
-import threading
-from limo_description import getInitialStateFromOdom
+import numpy as np
 
-class VoronoiPlanner:
-    def __init__(self, robot_radius=0.2, v_d=0.1, robot_name="limo0", debug = False):
-        self.robot_name = robot_name
-        self.robot_radius = robot_radius
-        self.v_d = v_d   # desired linear velocity
-        self.dt = conf.robot_params[self.robot_name]['dt']     # time step for discretization
-        self.DEBUG = debug
-        # chec if controller is running
-        nodes = rosnode.get_node_names()
+class VoronoiPlannerParams(PlannerParamsBase):
+    def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=5.5):
+        super().__init__(robot_radius, v_max, curvature_max)
 
-        node_name = f"/{self.robot_name}/controller"
-        if node_name in nodes:
-            print(f"Node {node_name} exists!")
-            p0_x, p0_y, yaw0 = getInitialStateFromOdom(self.robot_name)
-            self.start = [p0_x, p0_y, yaw0]
-        else:
-            print(colored(f"Node {node_name} not found. Please make sure you started the controller", "red"))
-            sys.exit()
+class VoronoiPlanner(PlannerBase):
+    def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=0.1, robot_name="limo0", debug = False):
+        super().__init__(robot_radius, v_max, curvature_max, robot_name="limo0", debug = False)
+        self.params = VoronoiPlannerParams(robot_radius=0.2, v_max=0.1, curvature_max=0.1)
+        self.REFERENCE_TYPE = 'PIECE_WISE' #'PIECE_WISE', 'DUBINS' , 'DUBINS_MULTIPOINT'
 
+    #Helpers
+    def discretize_segment(self, p0, p1, spacing):
+        """Return points along segment from p0->p1 inclusive of p0, exclusive of p1."""
+        x0, y0 = p0
+        x1, y1 = p1
+        L = math.hypot(x1 - x0, y1 - y0)
+        if L < 1e-9:
+            return []
+        n = max(1, int(L // spacing))  # number of intervals
+        ts = np.linspace(0.0, 1.0, n + 1)[:-1]  # exclude 1.0 to avoid duplicating next edge's start
+        xs = x0 + (x1 - x0) * ts
+        ys = y0 + (y1 - y0) * ts
+        return list(zip(xs, ys))
 
-        self.obstacle_list = []
-        self.obstacles_ready = None
-        self.map_ready = False
-        self.goal_ready = False
-        self.computed_path = False
+    def discretize_polygon(self,vertices, spacing):
+        """
+        vertices: list of (x,y) in order (closed or open).
+        Returns a list of sampled (x,y) along the edges.
+        """
+        pts = []
+        m = len(vertices)
+        for i in range(m):
+            p0 = vertices[i]
+            p1 = vertices[(i + 1) % m]
+            pts.extend(self.discretize_segment(p0, p1, spacing))
+        return pts
 
-        # ROS interfaces
-        rospy.Subscriber("/map_borders", Polygon, self.map_borders_cb)
-        rospy.Subscriber("/obstacles", ObstacleArrayMsg, self.obstacles_cb)
-        rospy.Subscriber("/gates", PoseArray, self.goal_cb)
-        self.ref_pub = rospy.Publisher("/"+self.robot_name+"/ref", Reference, queue_size=10)
-        self.rate = rospy.Rate(1 / self.dt)  # 100Hz loop, adjust as needed
-        rospy.loginfo("Planner initialized. Waiting for map, obstacles, and goal...")
+    def discretize_circle(self,cx, cy, r, spacing, n_min=12):
+        circumference = 2 * math.pi * r
+        n = max(n_min, int(circumference // spacing))
+        angles = np.linspace(0.0, 2.0 * math.pi, n, endpoint=False)
+        return [(cx + r * math.cos(a), cy + r * math.sin(a)) for a in angles]
 
+    # ovverride callback
+    def obstacles_cb(self, msg):
+        if self.obstacles_ready:
+            return
 
+        edge_spacing = 0.5 * self.robot_radius
+        all_points = []
 
-    # ---------- Callbacks ----------
+        for obstacle in msg.obstacles:
+            # Cylinder (1 point + radius)
+            if len(obstacle.polygon.points) == 1:
+                cx = obstacle.polygon.points[0].x
+                cy = obstacle.polygon.points[0].y
+                radius = float(obstacle.polygon.radius)
+                samples = self.discretize_circle(cx, cy, radius, edge_spacing)
+
+            # Polygon
+            else:
+                verts = [(p.x, p.y) for p in obstacle.polygon.points]
+                samples = self.discretize_polygon(verts, edge_spacing)
+
+            all_points.extend(samples)
+
+        self.obstacle_list.extend(all_points)
+        self.obstacles_ready = True
+        rospy.loginfo("Added %d obstacle samples", len(all_points))
+
+    #override callback
     def map_borders_cb(self, msg):
         if self.map_ready:
             return
@@ -60,164 +86,23 @@ class VoronoiPlanner:
         self.map_ready = True
         rospy.loginfo("Discretized border added with %d points", len(border_points))
 
-    def obstacles_cb(self, msg):
-        if self.obstacles_ready:
-            return
+    def plan_path(self):
+        rospy.loginfo("Running Voronoi...")
 
-        edge_spacing = 0.5 * self.robot_radius  # tune as needed
+        voronoi_planner = VoronoiRoadMapPlanner(start=self.start, goal=self.goal, obstacle_list=self.obstacle_list, robot_radius=self.robot_radius)
+        path = voronoi_planner.planning(show_animation=True)
 
-        ox, oy = [], []
-
-        for obstacle in msg.obstacles:
-            poly = [(p.x, p.y) for p in obstacle.polygon.points]
-            # discretize polygon edges
-            samples = discretize_polygon(poly, edge_spacing)
-            # (optional) also log/outscribe circle if you like
-            xs = [p[0] for p in poly];
-            ys = [p[1] for p in poly]
-            cx = sum(xs) / len(xs);
-            cy = sum(ys) / len(ys)
-            radius = max(math.hypot(px - cx, py - cy) for (px, py) in poly)
-            rospy.loginfo("Added polygon obstacle at (%.2f, %.2f), r≈%.2f with %d samples",
-                          cx, cy, radius, len(samples))
-
-            for x, y in samples:
-                ox.append(x);
-                oy.append(y)
-
-        # (Optional) ensure bounded Voronoi with a workspace frame
-        if hasattr(self, "workspace"):
-            xmin, xmax, ymin, ymax = self.workspace  # define elsewhere
-            border_pts = discretize_polygon(
-                [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)],
-                edge_spacing
-            )
-            for x, y in border_pts:
-                ox.append(x);
-                oy.append(y)
-
-        # Deduplicate noisy/overlapping points (optional)
-        pts = unique_points(list(zip(ox, oy)))
-        self.ox = [p[0] for p in pts]
-        self.oy = [p[1] for p in pts]
-
-        self.obstacles_ready = True
-
-    def goal_cb(self, msg):
-        if self.goal_ready:
-            return
-        for goal in msg.poses:
-            self.goal = (goal.position.x, goal.position.y)
-            self.goal_ready = True
-            rospy.loginfo("Goal set: %s", self.goal)
-
-    # ---------- Helpers ----------
-    def discretize_border(self, polygon_msg, discretization_point=20, radius=0.01):
-        points = []
-        pts = polygon_msg.points
-        for i in range(len(pts)):
-            start = pts[i]
-            end = pts[(i + 1) % len(pts)]
-            for j in range(discretization_point):
-                x = start.x + (end.x - start.x) * float(j) / discretization_point
-                y = start.y + (end.y - start.y) * float(j) / discretization_point
-                points.append((x, y, radius))
-        return points
-
-    def try_run_voronoi(self):
-
-        rospy.loginfo("Running RRT...")
-        xs = [ox for (ox, _, _) in self.obstacle_list]
-        ys = [oy for (_, oy, _) in self.obstacle_list]
-        self.rand_area = [min(xs), max(xs)]
-
-        rrt = RRT(
-            start=self.start,
-            goal=self.goal,
-            obstacle_list=self.obstacle_list,
-            expand_dis=1.0,
-            path_resolution=0.25,
-            max_iter= 1000,
-            rand_area=self.rand_area,
-            robot_radius=self.robot_radius
-        )
-        self.path = rrt.planning(animation=True)
-
-        if self.path is None:
-            rospy.logwarn("No path found.")
-        else:
-            rospy.loginfo("Path found with %d waypoints.", len(self.path))
-            # ---- Plot first (non-blocking) ----
-            plt.plot([x for (x, y) in self.path],
-                     [y for (x, y) in self.path], '-r')
-            plt.grid(True)
-            plt.draw()
-            plt.show(block=False)
-            threading.Thread(target=self.publish_reference, args=(self.path,), daemon=True).start()
-
-
-        return True
-
-    def publish_reference(self, path):
-        """
-        Discretize path with velocity v_d and dt, publish Reference messages
-        """
-        rospy.loginfo("Publishing reference trajectory...")
-
-        # Reverse path to start->goal order
-        path = path[::-1]
-
-        theta0 = self.start[2]
-        ds = self.v_d * self.dt
-        try:
-            for i in range(len(path) - 1):
-                x0, y0 = path[i]
-                x1, y1 = path[i + 1]
-                dx = x1 - x0
-                dy = y1 - y0
-                seg_len = math.hypot(dx, dy)
-                theta1 = math.atan2(dy, dx)
-                # lnear interpolation
-                n_points = max(1, int(seg_len / ds))
-                for j in range(n_points):
-                    t = float(j) / n_points
-                    x_d = x0 + t * dx
-                    y_d = y0 + t * dy
-
-                    ref = Reference()
-                    ref.x_d = x_d
-                    ref.y_d = y_d
-                    ref.theta_d = theta0 + t * (theta1 - theta0)
-                    ref.v_d = self.v_d
-                    ref.omega_d = 0.0  # could be refined with curvature
-
-                    self.ref_pub.publish(ref)
-                    if self.DEBUG:
-                        print(f"Reference: {ref.x_d}, {ref.y_d}, {ref.theta_d}")
-
-
-                    #TODO do it with timer rather than with threades https://chatgpt.com/c/68b5915d-3b40-832b-a7b3-ad92f88926b7
-                    try:
-                        self.rate.sleep()  # sleep per point
-                    except rospy.ROSInterruptException:
-                        return
-                theta0 = theta1
-        finally:
-            rospy.loginfo("Reference trajectory published.")
-            ref.plan_finished = True
-            self.ref_pub.publish(ref)
-            rospy.signal_shutdown("Finished RRT planning")
-        self.computed_path = True
-
+        return path
 
 # ---------- Main ----------
 if __name__ == "__main__":
     rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
-    planner = VoronoiPlanner(  robot_radius=0.2, v_d=0.2, robot_name="limo0", debug=False)
+    planner = VoronoiPlanner(robot_radius=0.2, v_max=0.1, curvature_max=4.0, robot_name="limo0", debug=False)
 
     while not rospy.is_shutdown():
         # be sure you have received all messages
-        if not planner.computed_path and planner.goal_ready and planner.map_ready and planner.map_ready:
-            planning_done = planner.try_run_voronoi()
+        if not planner.computed_path and planner.goal_ready and planner.obstacles_ready and planner.map_ready:
+            planner.path = planner.plan_path()
+            planning_done = planner.send_path(planner.path)
             if planning_done:
                 break
