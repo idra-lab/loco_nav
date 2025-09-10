@@ -105,7 +105,9 @@
       args="-urdf -param robot_description -model limo$(arg robot_id) -x $(arg x_pos1) -y $(arg y_pos1) -z 1. -Y $(arg yaw_pos1)" />
 
     <!-- TF & joints -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" >
+    <param name="rate" value="100" />
+    </node>
 
     <!--static
     TF -->
