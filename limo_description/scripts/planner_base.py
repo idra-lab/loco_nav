@@ -75,7 +75,7 @@ class PlannerBase:
             if len(obstacle.polygon.points) == 1:
                 xs = obstacle.polygon.points.x
                 ys = obstacle.polygon.points.y
-                radius = obstacle.polygon.radius
+                radius = obstacle.radius
             else:#find outscribed circle to polygon
                 xs = [p.x for p in obstacle.polygon.points]
                 ys = [p.y for p in obstacle.polygon.points]

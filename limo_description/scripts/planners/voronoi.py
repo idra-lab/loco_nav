@@ -35,7 +35,7 @@ from planners.dijkstra_search import DijkstraSearch
 show_animation = True
 
 
-class VoronoiRoadMapPlanner:
+class VoronoiBasePlanner:
     """Planner that builds a Voronoi-based roadmap and searches it with Dijkstra.
 
     Attributes
@@ -85,7 +85,6 @@ class VoronoiRoadMapPlanner:
         oy = [p[1] for p in self.obstacle_list ]
 
 
-
         # KD-tree accelerates nearest-obstacle distance queries used in collision checks
         obstacle_tree = cKDTree(np.vstack((ox, oy)).T)
 
@@ -97,13 +96,11 @@ class VoronoiRoadMapPlanner:
             plt.plot(sx, sy, "ob", markersize=10, label="start")
             plt.plot(gx, gy, "or", markersize=10, label="goal")
             plt.grid(True)
-            plt.plot(sample_x, sample_y, ".g", label="Voronoi vertices")
+            #plt.plot(sample_x, sample_y, ".g", label="Voronoi vertices")
             plt.axis("equal")
             plt.legend(loc="best")
         # 2) Build roadmap edges between nodes (subject to collision-free straight lines)
-        road_map_info = self.generate_road_map_info(
-            sample_x, sample_y, self.robot_radius, obstacle_tree
-        )
+        road_map_info = self.generate_road_map_info(sample_x, sample_y, self.robot_radius, obstacle_tree)
 
         # 3) Run Dijkstra over the roadmap (DijkstraSearch accepts the samples and adjacency)
         rx, ry = DijkstraSearch(show_animation).search(
@@ -114,13 +111,12 @@ class VoronoiRoadMapPlanner:
 
     def is_collision(
         self,
-        sx: float,
-        sy: float,
-        gx: float,
-        gy: float,
-        rr: float,
-        obstacle_kd_tree: cKDTree,
-    ) -> bool:
+        sx,
+        sy,
+        gx,
+        gy,
+        rr,
+        obstacle_kd_tree):
         """Check if the straight segment (sx, sy) → (gx, gy) collides with obstacles.
 
         Strategy: march along the segment in steps of size D=rr (robot radius),
@@ -162,8 +158,8 @@ class VoronoiRoadMapPlanner:
         node_x: list[float],
         node_y: list[float],
         rr: float,
-        obstacle_tree: cKDTree,
-    ) -> list[list[int]]:
+        obstacle_tree: cKDTree
+    ):
         """Construct adjacency list for the roadmap.
 
         For each node, query its neighbors by distance and try to connect up to
@@ -205,23 +201,23 @@ class VoronoiRoadMapPlanner:
         # If desired, you can visualize with plot_road_map(road_map, node_x, node_y)
         return road_map
 
-    @staticmethod
-    def plot_road_map(road_map: list[list[int]], sample_x: list[float], sample_y: list[float]) -> None:  # pragma: no cover
+
+    def plot_road_map(self, road_map: list[list[int]], sample_x: list[float], sample_y: list[float]) -> None:  # pragma: no cover
         """Utility to plot the roadmap edges for debugging/visualization."""
         for i, _ in enumerate(road_map):
             for ii in range(len(road_map[i])):
                 ind = road_map[i][ii]
                 plt.plot([sample_x[i], sample_x[ind]], [sample_y[i], sample_y[ind]], "-k")
 
-    @staticmethod
-    def voronoi_sampling(
+
+    def voronoi_sampling(self,
         sx: float,
         sy: float,
         gx: float,
         gy: float,
         ox: list[float],
         oy: list[float],
-    ) -> tuple[list[float], list[float]]:
+    ):
         """Sample roadmap nodes from Voronoi vertices of obstacle points + start/goal.
 
         The Voronoi vertices tend to lie in regions equidistant from obstacles,
@@ -275,7 +271,7 @@ if __name__ == "__main__":
     for i in range(40):
         obstacle_list.append([40.0, 60.0 - i])
 
-    voronoi_planner = VoronoiRoadMapPlanner(start, goal, obstacle_list,  robot_size)
+    voronoi_planner = VoronoiBasePlanner(start, goal, obstacle_list,  robot_size)
 
     # Plan
     path = voronoi_planner.planning(show_animation = show_animation)

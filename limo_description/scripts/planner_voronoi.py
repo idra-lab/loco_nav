@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import rospy
 from planner_base import PlannerParamsBase, PlannerBase
-from planners.voronoi import VoronoiRoadMapPlanner
+from planners.voronoi import VoronoiBasePlanner
 import math
 import numpy as np
 
@@ -63,7 +63,7 @@ class VoronoiPlanner(PlannerBase):
             if len(obstacle.polygon.points) == 1:
                 cx = obstacle.polygon.points[0].x
                 cy = obstacle.polygon.points[0].y
-                radius = float(obstacle.polygon.radius)
+                radius = float(obstacle.radius)
                 samples = self.discretize_circle(cx, cy, radius, edge_spacing)
 
             # Polygon
@@ -89,8 +89,8 @@ class VoronoiPlanner(PlannerBase):
     def plan_path(self):
         rospy.loginfo("Running Voronoi...")
 
-        voronoi_planner = VoronoiRoadMapPlanner(start=self.start, goal=self.goal, obstacle_list=self.obstacle_list, robot_radius=self.robot_radius)
-        path = voronoi_planner.planning(show_animation=True)
+        self.voronoi_base_planner = VoronoiBasePlanner(start=self.start, goal=self.goal, obstacle_list=self.obstacle_list, robot_radius=self.robot_radius)
+        path = self.voronoi_base_planner.planning(show_animation=True)
 
         return path
 

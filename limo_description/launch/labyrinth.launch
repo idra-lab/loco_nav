@@ -6,7 +6,7 @@
     <arg name="use_sim_time" default="true"/>
     <arg name="use_gui" default="true"/>
     <arg name="use_rviz" default="true"/>
-    <arg name="world_name" default="labirinth.world"/>
+    <arg name="world_name" default="labyrinth.world"/>
     <arg name="elements_models_path" default="$(find map_pkg)/models"/>
     <arg name="gazebo_models_path" default="$(find map_pkg)/worlds"/>
     <!-- needed for lidar -->
@@ -27,7 +27,7 @@
     <arg name="yaw_pos1" default="0.0"/>
 
 
-    <!-- to load custom model labirinth-->
+    <!-- to load custom model labyrinth-->
     <env name="GAZEBO_MODEL_PATH" value="$(find map_pkg)/models"/>
     <env name="GAZEBO_RESOURCE_PATH" value="$(find map_pkg)/worlds"/>
 
@@ -42,7 +42,7 @@
     </include>
 
     <!--load map for amcl-->
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find map_pkg)/maps/labirinth.yaml"/>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find map_pkg)/maps/labyrinth.yaml"/>
 
     <group ns="limo0">
         <arg name="robot_id" value="0"/>
@@ -128,8 +128,11 @@
 
     </group>
 
+    <!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS-->
+    <node pkg="limo_description" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen"/>
+
     <!-- RViz (optional) -->
     <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"
-          args="-d $(find limo_description)/rviz/conf_labirinth.rviz"/>
+          args="-d $(find limo_description)/rviz/conf_labyrinth.rviz"/>
 
 </launch>

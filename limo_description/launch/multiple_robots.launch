@@ -76,9 +76,10 @@
     <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
       args="-urdf -param robot_description -model limo$(arg robot_id) -x $(arg x_pos) -y $(arg y_pos) -z 1. -Y $(arg yaw_pos)" />
 
-    <!-- TF & joints -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
-
+       <!-- TF & joints -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" >
+    <param name="rate" value="100" />
+    </node>
     <!--static
     TF -->
     <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"

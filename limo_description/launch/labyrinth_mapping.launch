@@ -6,7 +6,7 @@
   <arg name="use_sim_time" default="true" />
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
-  <arg name="world_name" default="labirinth.world" />
+  <arg name="world_name" default="labyrinth.world" />
   <arg name="elements_models_path" default="$(find map_pkg)/models" />
   <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
   <arg name="sensors" default="true" />
@@ -94,7 +94,7 @@
 
 
 
-  <!-- Keyboard teleop when you explored the map rosrun map_server map_saver -f $(rospack find map_pkg)/maps/labirinth -->
+  <!-- Keyboard teleop when you explored the map rosrun map_server map_saver -f $(rospack find map_pkg)/maps/labyrinth -->
 
  <!--node pkg="key_teleop" type="key_teleop.py" name="teleop_arrow" output="screen" args="cmd_vel:=/limo0/cmd_vel"/-->   
  
