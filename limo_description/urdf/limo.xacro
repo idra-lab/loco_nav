@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <robot name="limo" xmlns:xacro="http://ros.org/wiki/xacro">
+
     <xacro:macro name="limo_wheel" params="parent_prefix wheel_prefix reflect *joint_pose">
         <link name="${wheel_prefix}_wheel_link">
             <inertial>
@@ -20,13 +21,7 @@
               </geometry>
             </collision>
             
-            <!--collision>
-                  <origin xyz="0 0 0" rpy="0 0 0" />
-              <geometry>
-                  <mesh filename="file://$(find limo_description)/meshes/limo_optimal_wheels.dae" />
-              </geometry>
-            </collision-->
-        </link>
+           </link>
 
         <joint name="${wheel_prefix}_wheel" type="continuous">
             <parent link="${parent_prefix}"/>

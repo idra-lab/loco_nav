@@ -4,15 +4,15 @@
 
     <xacro:arg name="robot_id" default="" />
     
+    <xacro:arg name="sensors" default="true" />
     
-    
-    
-    
-	     <xacro:macro name="limo" params='robot_id'>
-	    <!-- defines limo wheel, laser, depth camera, imu macros-->
-	    <xacro:include filename="$(find limo_description)/urdf/limo.xacro" />
-	
 
+    
+
+    
+     <xacro:macro name="limo_robot" params='robot_id'>
+	    <!-- defines limo wheel, laser, depth camera, imu macros-->
+    	    <xacro:include filename="$(find limo_description)/urdf/limo.xacro" />
 	    
 	    <!-- Variables -->
 	    <xacro:property name="M_PI" value="3.14159"/>
@@ -42,7 +42,7 @@
 		<visual>
 		    <origin xyz="0 0 -0.15" rpy="0 0 1.57" />
 		    <geometry>
-		        <mesh filename="file://$(find limo_description)/meshes/limo_optimal.dae" scale="1 1 1"/>
+		        <mesh filename="file://$(find limo_description)/meshes/limo_base.dae" scale="1 1 1"/>
 		        
 		    </geometry>
 		</visual>
@@ -50,7 +50,7 @@
 		    <!--origin xyz="0 0 -0.15" rpy="0 0 1.57" /-->
 		    <origin xyz="0 0 -0.15" rpy="0 0 1.57" />
 		  <geometry>
-		      <mesh filename="file://$(find limo_description)/meshes/limo_optimal.dae" scale="1 1 1"/>
+		      <mesh filename="file://$(find limo_description)/meshes/limo_base.dae" scale="1 1 1"/>
 		  </geometry>
 		</collision>
 	    </link>
@@ -221,7 +221,7 @@
 		  <!-- Generic publisher for ALL joints in the model -->
 		   <plugin name="joint_state_pub" filename="libgazebo_ros_joint_state_publisher.so">
 		    <ros><namespace>limo$(arg robot_id)</namespace></ros>
-		    <updateRate>50</updateRate>
+		    <updateRate>100</updateRate>
 
                      <alwaysOn>true</alwaysOn>
 	              <jointName>limo$(arg robot_id)/front_left_wheel, limo$(arg robot_id)/rear_left_wheel,limo$(arg robot_id)/front_right_wheel,limo$(arg robot_id)/rear_right_wheel</jointName>
@@ -230,10 +230,19 @@
 		  
 	</gazebo>
 
-        		
-           
+    <xacro:if value="$(arg sensors)">         
+            <xacro:include filename="$(find limo_description)/urdf/limo_sensors.gazebo" />
+      	    <xacro:limo_sensors robot_id="$(arg robot_id)"/>  
+    
+      </xacro:if>
+
  
     </xacro:macro>
 
-    <xacro:limo robot_id="$(arg robot_id)" />
+  
+
+
+    <!-- instantiate the actual robot -->
+    <xacro:limo_robot robot_id="$(arg robot_id)" />
+   
 </robot>

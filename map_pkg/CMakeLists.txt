@@ -21,6 +21,8 @@ catkin_package(
   CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs  obstacles_msgs 
 )
 
+
+
 ## Include directories
 include_directories(
   include
@@ -55,6 +57,9 @@ target_link_libraries(send_victims ${catkin_LIBRARIES})
 target_link_libraries(send_borders ${catkin_LIBRARIES})
 target_link_libraries(send_timeout ${catkin_LIBRARIES})
 
+## for making sure messages are generated before 
+add_dependencies(send_obstacles ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(send_victims ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_install_python(PROGRAMS
   scripts/delete_full_config.sh

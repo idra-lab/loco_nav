@@ -1,12 +1,14 @@
 <?xml version="1.0" ?>
 <launch>
 
-	<arg name="rviz_conf" default="$(find limo_description)/rviz/conf.rviz"/>
-	<arg name="robot_id" default="1" />
+	<arg name="rviz_conf" default="$(find limo_description)/rviz/conf_tf.rviz"/>
+	<arg name="robot_id" default="0" />
+	<arg name="sensors" default="false" />
 	
 	<!-- send  urdf to param server-->
 	<include file="$(find limo_description)/launch/upload.launch">	
 		<arg name="robot_id" default="$(arg robot_id)"/>
+		<arg name="sensors" default="$(arg sensors)"/>
 	</include>
 
 	<node pkg="tf" type="static_transform_publisher" name="world_broadcaster" args="0 0 0 0 0 0    /limo$(arg robot_id)/base_link /world  200"/>

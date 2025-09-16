@@ -2,10 +2,10 @@
 <launch>
 	<arg name="robot_name" default="limo_four_diff" />
 	
-	<arg name="robot_id" default="1" />
-
+	<arg name="robot_id" default="0" />
+	<arg name="sensors" default="false" />
         <!-- send robot urdf to param server -->
-	<param name="robot_description" command="$(find xacro)/xacro --inorder '$(find limo_description)/urdf/$(arg robot_name).xacro' robot_id:=$(arg robot_id) "/> 
+	<param name="robot_description" command="$(find xacro)/xacro --inorder '$(find limo_description)/urdf/$(arg robot_name).xacro' robot_id:=$(arg robot_id) sensors:=$(arg sensors) "/> 
 
 </launch>
 
