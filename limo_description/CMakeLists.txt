@@ -37,6 +37,7 @@ catkin_install_python(
     scripts/planners/rrt.py
     scripts/planners/dubins.py
     scripts/convert_labyrinth_map.py
+    scripts/remote_bringup.sh
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
