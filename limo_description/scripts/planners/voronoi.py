@@ -36,18 +36,28 @@ show_animation = True
 
 
 class VoronoiBasePlanner:
-    """Planner that builds a Voronoi-based roadmap and searches it with Dijkstra.
-
-    Attributes
-    ----------
-    N_KNN : int
-        Max number of neighbor connections per roadmap node.
-    MAX_EDGE_LEN : float
-        Hard cap on edge length (meters) to avoid overly long connections that
-        may cut through clutter or hurt numerical stability.
+    """
+              Planner that builds a Voronoi-based roadmap and searches it with Dijkstra.
     """
 
-    def __init__(self, start, goal, obstacle_list, robot_radius) -> None:
+    def __init__(self, start, goal, obstacle_list, robot_radius):
+        """
+         Parameters
+            ----------
+            sx, sy : float
+                Start coordinates.
+            gx, gy : float
+                Goal coordinates.
+            obstacle_list : list[float]
+                Obstacle point clouds (x and y lists).
+            N_KNN : int
+                Max number of neighbor connections per roadmap node.
+            MAX_EDGE_LEN : float
+                Hard cap on edge length (meters) to avoid overly long connections that
+                may cut through clutter or hurt numerical stability.
+            robot_radius : float
+                Circular robot radius used for conservative collision checks.
+        """
         # Tuning parameters
         self.N_KNN = 10           # number of neighbors to try per sampled point
         self.MAX_EDGE_LEN = 30.0  # [m] maximum edge length allowed
@@ -58,19 +68,7 @@ class VoronoiBasePlanner:
 
     def planning(self,  show_animation=True):
 
-        """Plan a path from (sx, sy) to (gx, gy).
-
-
-        Parameters
-        ----------
-        sx, sy : float
-            Start coordinates.
-        gx, gy : float
-            Goal coordinates.
-        obstacle_list : list[float]
-            Obstacle point clouds (x and y lists).
-        robot_radius : float
-            Circular robot radius used for conservative collision checks.
+        """Plan a path from start (sx, sy) to goal (gx, gy).
 
         Returns
         -------
@@ -84,39 +82,32 @@ class VoronoiBasePlanner:
         ox = [p[0] for p in self.obstacle_list ]
         oy = [p[1] for p in self.obstacle_list ]
 
-
         # KD-tree accelerates nearest-obstacle distance queries used in collision checks
-        obstacle_tree = cKDTree(np.vstack((ox, oy)).T)
+        self.obstacle_tree = cKDTree(np.vstack((ox, oy)).T)
 
         # 1) Sample candidate nodes from Voronoi diagram of obstacles (+ start/goal)
         sample_x, sample_y = self.voronoi_sampling(sx, sy, gx, gy, ox, oy)
-        if show_animation:  # pragma: no cover (skip in tests)
+
+        #plot
+        if show_animation:
             plt.figure()
             plt.plot(ox, oy, ".k", label="obstacles")
             plt.plot(sx, sy, "ob", markersize=10, label="start")
             plt.plot(gx, gy, "or", markersize=10, label="goal")
             plt.grid(True)
-            #plt.plot(sample_x, sample_y, ".g", label="Voronoi vertices")
+            plt.plot(sample_x, sample_y, ".g", label="Voronoi vertices")
             plt.axis("equal")
             plt.legend(loc="best")
-        # 2) Build roadmap edges between nodes (subject to collision-free straight lines)
-        road_map_info = self.generate_road_map_info(sample_x, sample_y, self.robot_radius, obstacle_tree)
+
+        # 2) Build roadmap (adjacency list) edges between nodes (subject to collision-free straight lines)
+        self.road_map = self.generate_road_map(sample_x, sample_y, self.robot_radius, self.obstacle_tree)
 
         # 3) Run Dijkstra over the roadmap (DijkstraSearch accepts the samples and adjacency)
-        rx, ry = DijkstraSearch(show_animation).search(
-            sx, sy, gx, gy, sample_x, sample_y, road_map_info
-        )
+        rx, ry = DijkstraSearch(show_animation).search(sx, sy, gx, gy, sample_x, sample_y, self.road_map)
         path = np.column_stack((rx, ry))
         return path
 
-    def is_collision(
-        self,
-        sx,
-        sy,
-        gx,
-        gy,
-        rr,
-        obstacle_kd_tree):
+    def is_collision(self, sx, sy, gx, gy, rr, obstacle_kd_tree):
         """Check if the straight segment (sx, sy) → (gx, gy) collides with obstacles.
 
         Strategy: march along the segment in steps of size D=rr (robot radius),
@@ -135,16 +126,15 @@ class VoronoiBasePlanner:
         if d >= self.MAX_EDGE_LEN:
             return True
 
-        D = rr               # step size along the edge (conservative)
-        n_step = round(d / D)
+        n_step = round(d / rr)
 
         # March and check clearance
         for _ in range(n_step):
             dist, _ = obstacle_kd_tree.query([x, y])
             if dist <= rr:
                 return True  # collision
-            x += D * math.cos(yaw)
-            y += D * math.sin(yaw)
+            x += rr * math.cos(yaw)
+            y += rr * math.sin(yaw)
 
         # Also ensure the goal endpoint itself is safe
         dist, _ = obstacle_kd_tree.query([gx, gy])
@@ -153,13 +143,12 @@ class VoronoiBasePlanner:
 
         return False  # edge is collision-free
 
-    def generate_road_map_info(
+    def generate_road_map(
         self,
-        node_x: list[float],
-        node_y: list[float],
+        voronoi_node_x: list[float],
+        voronoi_node_y: list[float],
         rr: float,
-        obstacle_tree: cKDTree
-    ):
+        obstacle_tree: cKDTree):
         """Construct adjacency list for the roadmap.
 
         For each node, query its neighbors by distance and try to connect up to
@@ -170,23 +159,22 @@ class VoronoiBasePlanner:
         road_map : list[list[int]]
             road_map[i] is the list of neighbor indices for node i.
         """
-        road_map: list[list[int]] = []
-        n_sample = len(node_x)
+        road_map = []
+        n_sample = len(voronoi_node_x)
 
         # KD-tree over nodes for fast KNN queries
-        node_tree = cKDTree(np.vstack((node_x, node_y)).T)
+        node_tree = cKDTree(np.vstack((voronoi_node_x, voronoi_node_y)).T)
 
         # For each node, walk outward to nearest others and attempt connections
-        for (i, ix, iy) in zip(range(n_sample), node_x, node_y):
+        for (i, ix, iy) in zip(range(n_sample), voronoi_node_x, voronoi_node_y):
             # Query *all* neighbors ordered by distance; we'll stop early at N_KNN
             dists, indexes = node_tree.query([ix, iy], k=n_sample)
-
-            edge_id: list[int] = []
+            edge_id = []
 
             # indexes[0] == i (self); start from 1 to skip self
             for ii in range(1, len(indexes)):
-                nx = node_x[indexes[ii]]
-                ny = node_y[indexes[ii]]
+                nx = voronoi_node_x[indexes[ii]]
+                ny = voronoi_node_y[indexes[ii]]
 
                 # Only accept edge if collision-free
                 if not self.is_collision(ix, iy, nx, ny, rr, obstacle_tree):
@@ -195,20 +183,22 @@ class VoronoiBasePlanner:
                 # Cap number of neighbors per node for sparsity
                 if len(edge_id) >= self.N_KNN:
                     break
-
+            # for each voronoi node append the list of the indexes of the other N_KNN voronoid nodes not in collision
             road_map.append(edge_id)
 
-        # If desired, you can visualize with plot_road_map(road_map, node_x, node_y)
+        # debug, you can visualize
+        #self.plot_road_map(road_map, voronoi_node_x, voronoi_node_y)
         return road_map
 
 
     def plot_road_map(self, road_map: list[list[int]], sample_x: list[float], sample_y: list[float]) -> None:  # pragma: no cover
         """Utility to plot the roadmap edges for debugging/visualization."""
+        # for each voronoi sample
         for i, _ in enumerate(road_map):
             for ii in range(len(road_map[i])):
                 ind = road_map[i][ii]
-                plt.plot([sample_x[i], sample_x[ind]], [sample_y[i], sample_y[ind]], "-k")
-
+                #plot an edge for each voronoi sample to the neighbouring indexed by the roabdmap
+                plt.plot([sample_x[i], sample_x[ind]], [sample_y[i], sample_y[ind]], "-m", label="roadmap")
 
     def voronoi_sampling(self,
         sx: float,
@@ -231,7 +221,7 @@ class VoronoiBasePlanner:
         sample_x = [vx for vx, _ in vor.vertices]
         sample_y = [vy for _, vy in vor.vertices]
 
-        # Always include start and goal as graph nodes
+        # Always include start and goal as graph nodes otherwise DJKSTRA cannot work!
         sample_x.append(sx)
         sample_y.append(sy)
         sample_x.append(gx)
@@ -243,16 +233,15 @@ class VoronoiBasePlanner:
 if __name__ == "__main__":
     print(__file__ + " start!!")
 
-    # Start and goal
+    # set Start and goal
     start = np.array([10.0, 10.0, 0.])  # [m]
     goal = np.array([50.0, 50.0, 0.]) # [m]
     obstacle_list = []
-    robot_size = 5.0  # [m] (used as the collision-check radius)
+    robot_size = 2.0  # [m] (used as the collision-check radius)
 
-    # Construct a toy map with axis-aligned walls and two internal walls
+    # Construct a toy map with obstacles as axis-aligned walls and two internal walls
     ox: list[float] = []
     oy: list[float] = []
-
     # Outer rectangle boundary
     for i in range(60):
         obstacle_list.append([float(i), 0.0])
@@ -262,15 +251,14 @@ if __name__ == "__main__":
         obstacle_list.append([float(i), 60.0])
     for i in range(61):
         obstacle_list.append([0.0, float(i)])
-
     # Internal vertical wall (left)
     for i in range(40):
         obstacle_list.append([20.0, float(i)])
-
     # Internal diagonal wall (right)
     for i in range(40):
         obstacle_list.append([40.0, 60.0 - i])
 
+    # instantiate the planner
     voronoi_planner = VoronoiBasePlanner(start, goal, obstacle_list,  robot_size)
 
     # Plan
@@ -278,7 +266,8 @@ if __name__ == "__main__":
 
     assert path.size > 0, "Cannot find path"
 
-    if show_animation:  # pragma: no cover
+    # plot the path connecting start to goal
+    if show_animation:
         plt.plot(path[:,0], path[:,1], "-r", label="path")
         plt.pause(0.1)
         plt.show()
