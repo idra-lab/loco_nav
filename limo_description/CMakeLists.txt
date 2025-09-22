@@ -42,10 +42,6 @@ catkin_install_python(
 )
   
 
-install(DIRECTORY config/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
-  PATTERN ".svn" EXCLUDE)
-
 
 install(DIRECTORY msg/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/msg
