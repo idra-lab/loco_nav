@@ -86,6 +86,7 @@ class VoronoiPlanner(PlannerBase):
         self.map_ready = True
         rospy.loginfo("Discretized border added with %d points", len(border_points))
 
+    # override callback
     def plan_path(self):
         rospy.loginfo("Running Voronoi...")
 

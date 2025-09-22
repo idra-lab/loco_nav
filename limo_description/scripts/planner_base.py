@@ -227,7 +227,7 @@ class PlannerBase:
 # ---------- Main ----------
 if __name__ == "__main__":
     rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
-    planner = PlannerBase(robot_radius=0.2, v_max=0.3, curvature_max=0.3, robot_name="limo0", debug=False)
+    planner = PlannerBase(robot_radius=0.2, v_max=0.5, curvature_max=0.3, robot_name="limo0", debug=False)
 
     while not rospy.is_shutdown():
         # be sure you have received all messages
