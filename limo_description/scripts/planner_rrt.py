@@ -47,5 +47,6 @@ if __name__ == "__main__":
         if not planner.computed_path and planner.goal_ready and planner.obstacles_ready and planner.map_ready:
             planner.path = planner.plan_path()
             planning_done = planner.send_path(planner.path)
+            rospy.spin() # keeps the process alive if you call it not in interactive mode
             if planning_done:
                 break
