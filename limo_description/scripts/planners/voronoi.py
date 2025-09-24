@@ -103,7 +103,7 @@ class VoronoiBasePlanner:
         self.road_map = self.generate_road_map(sample_x, sample_y, self.robot_radius, self.obstacle_tree)
 
         # 3) Run Dijkstra over the roadmap (DijkstraSearch accepts the samples and adjacency)
-        rx, ry = DijkstraSearch(show_animation).search(sx, sy, gx, gy, sample_x, sample_y, self.road_map)
+        rx, ry = DijkstraSearch(show_animation).search_simple(sx, sy, gx, gy, sample_x, sample_y, self.road_map)
         path = np.column_stack((rx, ry))
         return path
 
