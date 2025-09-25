@@ -75,8 +75,6 @@
       <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
         args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
 
-      <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher" />
-
       <!-- publishes odom to base link-->
       <node pkg="limo_description" type="remote_bringup.sh"
         name="remote_bringup"
