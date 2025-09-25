@@ -3,7 +3,7 @@
 # Example: ./remote_bringup.sh limo0
 
 NS=${1:-limo0}   # default = limo0
-
+LASER=${2:-true}   # default = true
 DOCKER_HOME=$(ssh agilex@limo "docker exec limo_docker bash -lc 'echo \$HOME'")
 
 
@@ -15,6 +15,9 @@ DOCKER_HOME=$(ssh agilex@limo "docker exec limo_docker bash -lc 'echo \$HOME'")
 
 echo "to avoid entering the pwd, firt time type ssh-copy-id agilex@limo"
 
+echo "[INFO] Namespace: $NS"
+echo "[INFO] Laser enabled: $LASER"
+
 # Pre-check: ensure /dev/ttyTHS1 exists inside the limo_docker container
 echo "[INFO] Checking /dev/ttyTHS1 inside limo_docker..."
 if ! ssh agilex@limo "docker exec limo_docker test -e /dev/ttyTHS1"; then
@@ -25,4 +28,4 @@ if ! ssh agilex@limo "docker exec limo_docker test -e /dev/ttyTHS1"; then
 fi
 
 
-ssh agilex@limo "docker exec  -i limo_docker bash -ic 'pkill -f limo_base_node; pkill -f ydlidar_ros_driver_node; rosnode kill /${NS}/limo_base_node; source /opt/ros/noetic/setup.bash;  source ${DOCKER_HOME}/ros_ws/devel/setup.bash;   roslaunch limo_bringup limo_start.launch  ns:=${NS}'"
+ssh agilex@limo "docker exec  -i limo_docker bash -ic 'pkill -f limo_base_node; pkill -f ydlidar_ros_driver_node; rosnode kill /${NS}/limo_base_node; source /opt/ros/noetic/setup.bash;  source ${DOCKER_HOME}/ros_ws/devel/setup.bash;   roslaunch limo_bringup limo_start.launch  ns:=${NS} laser:=${LASER}'"

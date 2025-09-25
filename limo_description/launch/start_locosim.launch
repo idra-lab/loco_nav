@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- for sim unset ROS_IP-->
+  <arg name="real_robot" default="false" />
+	<arg name="robot_name" default="limo0" />
+	<arg name="rviz" default="true" />
+	<arg name="gui" default="true" />
+
+  <!-- Parameters -->
+  <arg name="use_gui" default="true" />
+  <arg name="use_rviz" default="true" />
+  <arg name="world_name" default="empty.world" />
+  <arg name="elements_models_path" default="$(find map_pkg)/models" />
+  <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
+  <arg name="sensors" default="false" /> <!-- starts lidar -->
+
+	<arg name="spawn_x" default="0.0" />
+	<arg name="spawn_y" default="0.0" />
+	<arg name="spawn_z" default="0.3" />
+	<arg name="spawn_R" default="0.0" />
+	<arg name="spawn_P" default="0.0" />
+	<arg name="spawn_Y" default="0.0" />
+
+  <arg name="robot_id" value="0" />
+  <!-- load robot name into param server for urdf generation-->
+  <param name="robot_name" type="str" value="$(arg robot_name)" />
+
+
+  <!-- ========== SIMULATION BRANCH ========== -->
+  <group unless="$(arg real_robot)">
+        <!-- Set parameters -->
+        <param name="use_sim_time" value="true" />
+        <env name="GAZEBO_MODEL_PATH" value="$(find map_pkg)/models" />
+        <env name="GAZEBO_RESOURCE_PATH" value="$(find map_pkg)/worlds" />
+
+        <!--Start
+        gazebo-->
+        <include file="$(find gazebo_ros)/launch/empty_world.launch">
+          <arg name="world_name" value="$(find map_pkg)/worlds/$(arg world_name)" />
+          <arg name="paused" value="false" />
+          <arg name="use_sim_time" value="true" />
+          <arg name="gui" value="$(arg use_gui)" />
+          <arg name="headless" value="false" />
+          <arg name="debug" value="false" />
+          <arg name="verbose" value="true" />
+        </include>
+
+        <!-- Spawn limo0 in simulation -->
+        <group ns="limo0">
+
+          <include file="$(find limo_description)/launch/upload.launch">
+            <arg name="robot_id" default="$(arg robot_id)" />
+            <arg name="sensors" default="$(arg sensors)" />
+          </include>
+          <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model limo$(arg robot_id) -param robot_description -model $(arg robot_name) -x $(arg spawn_x) -y $(arg spawn_y) -z $(arg spawn_z) -R $(arg spawn_R) -P $(arg spawn_P) -Y $(arg spawn_Y)" />
+
+          <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
+
+          <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"  args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+
+        </group>
+        <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find limo_description)/rviz/conf_mapping.rviz" />
+
+  </group>
+
+  <group if="$(arg real_robot)">
+
+        <group ns="limo0">
+
+          <!-- this is just for rviz-->
+          <include file="$(find limo_description)/launch/upload.launch">
+            <arg name="robot_id" default="$(arg robot_id)" />
+          </include>
+
+          <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"
+            output="screen" />
+
+          <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
+            args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+
+          <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher" />
+
+          <!-- publishes odom to base link-->
+          <node pkg="limo_description" type="remote_bringup.sh"
+            name="remote_bringup"
+            args="limo$(arg robot_id) $(arg sensors)"
+            output="screen" required="true" />
+
+        </group>
+
+        <!-- RViz (optional) -->
+        <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"  args="-d $(find limo_description)/rviz/conf_real.rviz" />
+
+
+  </group>
+
+
+
+</launch>

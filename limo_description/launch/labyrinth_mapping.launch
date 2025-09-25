@@ -80,7 +80,7 @@
       <!-- publishes odom to base link-->
       <node pkg="limo_description" type="remote_bringup.sh"
         name="remote_bringup"
-        args="limo$(arg robot_id)"
+        args="limo$(arg robot_id) $(arg sensors)"
         output="screen" required="true" />
 
     </group>
