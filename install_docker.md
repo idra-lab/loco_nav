@@ -61,7 +61,7 @@ $ ./install_docker.sh
     $ gedit ~/.bashrc
     ```
 
-    and add the following lines at the bottom of the file:
+    and add the following lines at the bottom of the file (check LIMO_IP):
 
     ```bash
     source /opt/ros/noetic/setup.bash
@@ -70,6 +70,8 @@ $ ./install_docker.sh
     export LOCONAV_DIR=$HOME/ros_ws/src/loco_nav
     export PYTHONPATH=/opt/openrobots/lib/python3.8/site-packages:$LOCONAV_DIR/limo_description/loco_nav/scripts:$PYTHONPATH
     export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/opt/openrobots/share/
+    alias real_robot='export ROS_IP=$LIMO_IP'
+    alias sim='unset ROS_IP'
     ```
 
   - Now you can setup the workspace in the $HOME directory **inside** docker:

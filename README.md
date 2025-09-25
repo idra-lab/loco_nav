@@ -42,9 +42,10 @@ alias connect_limo='ssh -X -t agilex@limo "bash -ic \"lab\" "'
 alias attach_limo='ssh -X -t agilex@limo "bash -ic \"dock-other\" "'
 ```
 
-5. copy docker file inside LIMO (pwd:agx)
+5. copy docker file present in docker folder inside LIMO (pwd:agx)
 
 ```
+cd $LOCONAV_FOLDER/docker_limo 
 scp Dockerfile agilex@limo:~/docker
 ```
 
@@ -54,7 +55,7 @@ scp Dockerfile agilex@limo:~/docker
 connect_limo_no_docker
 ```
 
-7. compule docker inside LIMO
+7. compile docker inside LIMO
 
 ```
 cd $HOME/docker
