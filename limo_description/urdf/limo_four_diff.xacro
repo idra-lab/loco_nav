@@ -159,8 +159,8 @@
  		    <!--leftJoint>limo$(arg robot_id)/rear_left_wheel</leftJoint--> <!--DIRTY TRICK TO SOLVE ISSUE OF BAD TRACKING DUE TO FRICTION-->
  		    <!--rightJoint>limo$(arg robot_id)/rear_right_wheel</rightJoint--> <!--DIRTY TRICK TO SOLVE ISSUE OF BAD TRACKING DUE TO FRICTION-->
 
-		    <wheelSeparation>0.164</wheelSeparation>
-		    <wheelDiameter>0.09</wheelDiameter>
+		    <wheelSeparation>0.172</wheelSeparation>
+		    <wheelDiameter>0.095</wheelDiameter>
 
 		    <!-- Topics are relative to the namespace above -->
 		    <commandTopic>cmd_vel</commandTopic>
