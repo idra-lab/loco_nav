@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import matplotlib
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import rospy
@@ -16,6 +17,7 @@ import threading
 from  utils.communication_utils import getInitialStateFromOdom
 import numpy as np
 from planners.dubins import dubins_shortest_path, get_discretized_path_from_dubins
+from planners.dp import DP
 
 class PlannerParamsBase:
     def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=5.5):
@@ -188,7 +190,28 @@ class PlannerBase:
             reference = np.vstack([x_ref, y_ref, theta_ref, v_ref, omega_ref, time]).T
 
         elif self.REFERENCE_TYPE == 'DUBINS_MULTIPOINT':
-            pass #TODO
+            rospy.logdebug("Computing Dubins multipoint reference...")
+            points = path
+            def_thetas = [self.start[2]] + [0.0]*(len(points)-2) + [self.goal[2]]
+            fixed_angles = [True] + [False]*(len(points)-2) + [True]
+            k_max = self.params.Kmax
+            
+            dp_instance = DP(points, fixed_angles, k_max, discretizations=20, refinements=5, def_thetas=def_thetas)
+            opt_angles = dp_instance.solve_dp()
+
+            for i in range(len(points)-1):
+                p_start = points[i]
+                p_end = points[i+1]
+                start_theta = opt_angles[i]
+                end_theta = opt_angles[i+1]
+                curve,curvatures, lengths  = dubins_shortest_path(p_start[0], p_start[1], start_theta, p_end[0], p_end[1], end_theta, self.params.Kmax)
+                x_ref, y_ref, theta_ref, v_ref, omega_ref, time = get_discretized_path_from_dubins((p_start[0], p_start[1], start_theta), self.params.v_max, curve,lengths, self.dt)
+                if i==0:
+                    reference = np.vstack([x_ref, y_ref, theta_ref, v_ref, omega_ref, time]).T
+                else:
+                    reference = np.vstack([reference, np.vstack([x_ref, y_ref, theta_ref, v_ref, omega_ref, time]).T])
+            rospy.logdebug("Dubins multipoint reference computed with %d points.", reference.shape[0])
+            
 
         else:
             print(colored("Wrong ref. type","red"))
