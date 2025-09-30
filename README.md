@@ -42,27 +42,7 @@ alias connect_limo='ssh -X -t agilex@limo "bash -ic \"lab\" "'
 alias attach_limo='ssh -X -t agilex@limo "bash -ic \"dock-other\" "'
 ```
 
-5. copy docker file present in docker folder inside LIMO (pwd:agx)
-
-```
-cd $LOCONAV_FOLDER/docker_limo 
-scp Dockerfile agilex@limo:~/docker
-```
-
-6. connect to LIMO
-
-```
-connect_limo_no_docker
-```
-
-7. compile docker inside LIMO
-
-```
-cd $HOME/docker
-docker build -t introrob .
-```
-
-8. add these aliases inside LIMO $HOME/.bashrc
+5. install and enable chrony on HOSTCOMPUTER for synchronization:
 
 ```
 alias lab='xhost +local:docker; docker rm -f limo_docker || true; docker run --name limo_docker   --user $(id -u):$(id -g)  --workdir="/home/$USER" --volume="/etc/group:/etc/group:ro"   --volume="/etc/shadow:/etc/shadow:ro"  --volume="/etc/passwd:/etc/passwd:ro" --device=/dev/dri:/dev/dri  -e "QT_X11_NO_MITSHM=1" --network=host --hostname=docker -it  --device=/dev/ttyTHS1:/dev/ttyTHS1 --device=/dev/ttyUSB0:/dev/ydlidar   --volume "/tmp/.X11-unix:/tmp/.X11-unix:rw"  --env="XAUTHORITY=$XAUTHORITY" \
@@ -72,7 +52,34 @@ alias dock-other='docker exec -it limo_docker /bin/bash'
 alias dock-root='docker exec -it --user root limo_docker /bin/bash'
 ```
 
+6. copy docker file present in docker folder inside LIMO (pwd:agx)
 
+```
+cd $LOCONAV_FOLDER/docker_limo 
+scp Dockerfile agilex@limo:~/docker
+scp chrony.conf agilex@limo:~/docker
+```
+
+7. connect to LIMO
+
+```
+connect_limo_no_docker
+```
+
+8. compile docker inside LIMO
+
+```
+cd $HOME/docker
+docker build -t introrob .
+```
+
+9. add these aliases inside LIMO $HOME/.bashrc
+
+```
+sudo apt update
+sudo apt install chrony
+sudo systemctl restart chrony (only once in life or just reboot)
+```
 
 
 

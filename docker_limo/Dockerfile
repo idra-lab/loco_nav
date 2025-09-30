@@ -67,6 +67,23 @@ RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin_make"
 
 
  
+# Install chrony for sync of date between host and limo pc
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chrony && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy in chrony configuration (host PC as server, adjust IP!)
+COPY chrony.conf /etc/chrony/chrony.conf
+
+# Script that starts chrony, then execs your container command
+RUN echo '#!/bin/bash\n' \
+         'service chrony start\n' \
+         'exec "$@"\n' \
+    > /entrypoint.sh && chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/bash"] 
+ 
 
 # Patch roslaunch/nodeprocess.py to reduce shutdown timeout
 RUN sed -i 's/^_TIMEOUT_SIGINT = .*/_TIMEOUT_SIGINT = 0.1/' \

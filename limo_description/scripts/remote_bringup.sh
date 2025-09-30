@@ -4,6 +4,9 @@
 
 NS=${1:-limo0}   # default = limo0
 LASER=${2:-true}   # default = true
+ODOMETRY=${3:-true}   # default = true
+
+
 DOCKER_HOME=$(ssh agilex@limo "docker exec limo_docker bash -lc 'echo \$HOME'")
 
 
@@ -28,4 +31,4 @@ if ! ssh agilex@limo "docker exec limo_docker test -e /dev/ttyTHS1"; then
 fi
 
 
-ssh agilex@limo "docker exec  -i limo_docker bash -ic 'pkill -f limo_base_node; pkill -f ydlidar_ros_driver_node; rosnode kill /${NS}/limo_base_node; source /opt/ros/noetic/setup.bash;  source ${DOCKER_HOME}/ros_ws/devel/setup.bash;   roslaunch limo_bringup limo_start.launch  ns:=${NS} laser:=${LASER}'"
+ssh agilex@limo "docker exec  -i limo_docker bash -ic 'pkill -f limo_base_node; pkill -f ydlidar_ros_driver_node; rosnode kill /${NS}/limo_base_node; source /opt/ros/noetic/setup.bash;  source ${DOCKER_HOME}/ros_ws/devel/setup.bash;   roslaunch limo_bringup limo_start.launch  ns:=${NS} laser:=${LASER} pub_odom_tf:=${ODOMETRY}'"
