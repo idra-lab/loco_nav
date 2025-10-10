@@ -6,30 +6,10 @@ if TYPE_CHECKING:
     from .dp import DP as _DP
 
 import json
-import sys
-from pathlib import Path
-
 import numpy as np
-
-try:
-    from pympdp.logger import logger
-    from pympdp.dubins import dubins_shortest_path, circline, plotdubins
-    from pympdp.dp.cell import Cell
-except ModuleNotFoundError as exc:  # pragma: no cover - developer convenience
-    if exc.name not in {
-        "pympdp",
-        "pympdp.logger",
-        "pympdp.dubins",
-        "pympdp.dp",
-        "pympdp.dp.cell",
-    }:
-        raise
-    repo_root = Path(__file__).resolve().parents[2]
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
-    from pympdp.logger import logger
-    from pympdp.dubins import dubins_shortest_path, circline, plotdubins
-    from pympdp.dp.cell import Cell
+from planners.logger import logger
+from planners.dubins import dubins_shortest_path, circline, plotdubins
+from planners.cell import Cell
 
 class _VizMixin:
     def visualize_dp_matrix(self: "_DP", output_path=None, open_in_browser=True, show_optimal_path=False, samples_per_segment=80):

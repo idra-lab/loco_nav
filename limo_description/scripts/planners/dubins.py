@@ -324,7 +324,7 @@ def plotarc(arc: DubinsArc, color='b', npts=100):
     pts = np.array(pts)
     plt.plot(pts[:, 0], pts[:, 1], color=color, linewidth=2)
 
-def plotdubins(curve: DubinsCurve, color1='r', color2='g', color3='b'):
+def plotdubins(curve: DubinsCurve, color1='r', color2='g', color3='b', show=True):
     plotarc(curve.a1, color1)
     plotarc(curve.a2, color2)
     plotarc(curve.a3, color3)
@@ -339,7 +339,8 @@ def plotdubins(curve: DubinsCurve, color1='r', color2='g', color3='b'):
     plt.grid(True)
 
     plt.axis('equal')
-    plt.show()
+    if show:
+        plt.show()
 
 if __name__ == "__main__":
     q0 = (0.0, 0.0, -0.3)

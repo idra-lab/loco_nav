@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import sys
 import time
-from pathlib import Path
-
 import numpy as np
 
 from planners.logger import logger
+from planners.cell import Cell
 from planners.dubins import dubins_shortest_path
-
-from _viz_mixin import _VizMixin
+from planners._viz_mixin import _VizMixin
 
 def circles (x1, y1, x2, y2, r):
     """
@@ -39,20 +36,7 @@ def circles (x1, y1, x2, y2, r):
     return [xc1, xc2], [yc1, yc2]
 
 
-class Cell:
-    def __init__(self, _angle = np.nan, _length = 0., _next = None):
-        self._angle = _angle
-        self._length = _length
-        self._next = _next
 
-    def th(self):
-        return self._angle
-    
-    def l(self):
-        return self._length
-    
-    def prev(self):
-        return self._next
     
 
 class DP(_VizMixin):
@@ -293,8 +277,13 @@ if __name__ == "__main__":
     # points = [(0, 0), (1, 1), (2, 0)]
 
     dp_instance = DP(points, fixed_angles=[True, False, False, True], k_max=3, discretizations=90, refinements=1, def_thetas=def_thetas)
+
     now = time.time()
     dp_instance.solve_dp()
+
+    #for debug
+    dp_instance.visualize_dp_matrix(show_optimal_path=True)
+
     logger.info(f"Solved in {time.time()-now:.4f} seconds")
     dp_instance.print_dp_matrix()
 
