@@ -189,6 +189,7 @@ class PlannerBase:
 
         elif self.REFERENCE_TYPE == 'DUBINS':
             curve,curvatures, lengths  = dubins_shortest_path(self.start[0], self.start[1], self.start[2], self.goal[0], self.goal[1], self.goal[2], self.params.Kmax)
+            plotdubins(curve, color1='r', color2='g', color3='b')
             x_ref, y_ref, theta_ref, v_ref, omega_ref, time = get_discretized_path_from_dubins(self.start, self.params.v_max, curve,lengths, self.dt)
             reference = np.vstack([x_ref, y_ref, theta_ref, v_ref, omega_ref, time]).T
 
@@ -208,13 +209,16 @@ class PlannerBase:
                 start_theta = opt_angles[i]
                 end_theta = opt_angles[i+1]
                 curve,curvatures, lengths  = dubins_shortest_path(p_start[0], p_start[1], start_theta, p_end[0], p_end[1], end_theta, self.params.Kmax)
+                plotdubins(curve, color1='r', color2='g', color3='b', show=False)
                 x_ref, y_ref, theta_ref, v_ref, omega_ref, time = get_discretized_path_from_dubins((p_start[0], p_start[1], start_theta), self.params.v_max, curve,lengths, self.dt)
                 if i==0:
                     reference = np.vstack([x_ref, y_ref, theta_ref, v_ref, omega_ref, time]).T
                 else:
                     reference = np.vstack([reference, np.vstack([x_ref, y_ref, theta_ref, v_ref, omega_ref, time]).T])
+            plt.show(block=False)
+           
             rospy.logdebug("Dubins multipoint reference computed with %d points.", reference.shape[0])
-            
+
 
         else:
             print(colored("Wrong ref. type","red"))

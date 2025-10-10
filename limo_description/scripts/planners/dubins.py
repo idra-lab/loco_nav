@@ -236,6 +236,7 @@ def LRL(sc_th0, sc_thf, sc_Kmax):
 def scaleToStandard(x0, y0, th0 ,xf, yf, thf , Kmax):
     dx = (xf - x0)
     dy = (yf - y0)
+    assert not (dx==0. and dy==0.), "ERROR: you are sending coincident start/goal to Dubin curve"
     phi = math.atan2(dy, dx)
     lambda_ = math.hypot(dx, dy)/2
     sc_Kmax = Kmax * lambda_
@@ -340,7 +341,11 @@ def plotdubins(curve: DubinsCurve, color1='r', color2='g', color3='b', show=True
 
     plt.axis('equal')
     if show:
-        plt.show()
+        plt.show(block=False)
+    else:
+        # ✅ draw immediately even if non-blocking
+        plt.draw()
+        plt.pause(0.001)
 
 if __name__ == "__main__":
     q0 = (0.0, 0.0, -0.3)
