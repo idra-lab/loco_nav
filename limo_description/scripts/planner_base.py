@@ -16,23 +16,23 @@ import rosnode
 import threading
 from  utils.communication_utils import getInitialStateFromOdom
 import numpy as np
-from planners.dubins import dubins_shortest_path, get_discretized_path_from_dubins
+from planners.dubins import dubins_shortest_path, get_discretized_path_from_dubins, plotdubins
 from planners.dp import DP
 
 class PlannerParamsBase:
-    def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=5.5):
+    def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=1.):
         self.robot_radius = robot_radius
         self.v_max = v_max  # desired linear velocity
         self.Kmax = curvature_max
 
 class PlannerBase:
-    def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=0.1, robot_name="limo0", debug = False):
+    def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=3., robot_name="limo0", debug = False):
         self.robot_radius = robot_radius
         self.robot_name = robot_name
 
         self.params = PlannerParamsBase(robot_radius, v_max, curvature_max)
         self.dt = conf.robot_params[self.robot_name]['dt']     # time step for discretization
-        self.REFERENCE_TYPE = 'DUBINS' #'PIECE_WISE', 'DUBINS' , 'DUBINS_MULTIPOINT'
+        self.REFERENCE_TYPE = 'DUBINS_MULTIPOINT' #'PIECE_WISE', 'DUBINS' , 'DUBINS_MULTIPOINT'
         self.DEBUG = debug
 
         # check if controller node is running
@@ -124,7 +124,7 @@ class PlannerBase:
             start=self.start,
             goal=self.goal,
             obstacle_list=self.obstacle_list,
-            expand_dis=1.0,
+            expand_dis=3./self.params.Kmax, # it should be 3 times turning radius to avoid strange loops
             path_resolution=0.25,
             max_iter= 1000,
             rand_area=self.rand_area,
@@ -141,7 +141,8 @@ class PlannerBase:
             rospy.logwarn("No path found.")
         else:
 
-            rospy.loginfo("Path found with %d waypoints.", len(path))
+            rospy.loginfo("RRT: Path found with %d waypoints.", len(path))
+
             # ---- Plot first (non-blocking) ----
             plt.plot([x for (x, y) in path],
                      [y for (x, y) in path], '-r')
@@ -200,7 +201,7 @@ class PlannerBase:
             fixed_angles = [True] + [False]*(len(points)-2) + [True]
             k_max = self.params.Kmax
             
-            dp_instance = DP(points, fixed_angles, k_max, discretizations=20, refinements=5, def_thetas=def_thetas)
+            dp_instance = DP(points, fixed_angles, k_max, discretizations=90, refinements=0, def_thetas=def_thetas)
             opt_angles = dp_instance.solve_dp()
 
             for i in range(len(points)-1):
@@ -208,7 +209,7 @@ class PlannerBase:
                 p_end = points[i+1]
                 start_theta = opt_angles[i]
                 end_theta = opt_angles[i+1]
-                curve,curvatures, lengths  = dubins_shortest_path(p_start[0], p_start[1], start_theta, p_end[0], p_end[1], end_theta, self.params.Kmax)
+                curve, curvatures, lengths  = dubins_shortest_path(p_start[0], p_start[1], start_theta, p_end[0], p_end[1], end_theta, 3)
                 plotdubins(curve, color1='r', color2='g', color3='b', show=False)
                 x_ref, y_ref, theta_ref, v_ref, omega_ref, time = get_discretized_path_from_dubins((p_start[0], p_start[1], start_theta), self.params.v_max, curve,lengths, self.dt)
                 if i==0:
@@ -257,7 +258,7 @@ class PlannerBase:
 # ---------- Main ----------
 if __name__ == "__main__":
     rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
-    planner = PlannerBase(robot_radius=0.2, v_max=0.5, curvature_max=0.3, robot_name="limo0", debug=False)
+    planner = PlannerBase(robot_radius=0.2, v_max=0.3, curvature_max=3., robot_name="limo0", debug=False)
 
     while not rospy.is_shutdown():
         # be sure you have received all messages

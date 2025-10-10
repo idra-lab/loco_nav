@@ -26,7 +26,7 @@ class RRTPlanner(PlannerBase):
             start=self.start,
             goal=self.goal,
             obstacle_list=self.obstacle_list,
-            expand_dis=1.0,
+            expand_dis=3./self.params.Kmax, # it should be 3 times turning radius to avoid strange loops
             path_resolution=0.25,
             max_iter= 1000,
             rand_area=self.rand_area,
@@ -41,7 +41,7 @@ class RRTPlanner(PlannerBase):
 # ---------- Main ----------
 if __name__ == "__main__":
     rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
-    planner = RRTPlanner(robot_radius=0.2, v_max=0.2, curvature_max=4.0, robot_name="limo0", debug=False)
+    planner = RRTPlanner(robot_radius=0.2, v_max=0.2, curvature_max=3.0, robot_name="limo0", debug=False)
 
     while not rospy.is_shutdown():
         # be sure you have received all messages
