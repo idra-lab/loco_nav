@@ -30,7 +30,8 @@ class RRTPlanner(PlannerBase):
             path_resolution=0.25,
             max_iter= 1000,
             rand_area=self.rand_area,
-            robot_radius=self.params.robot_radius
+            robot_radius=self.params.robot_radius,
+            seed = 0  # to have always the same solution
         )
         path = rrt.planning(animation=True)
         # Reverse path to start->goal order

@@ -1,6 +1,8 @@
 """
 Path planning Sample Code with Randomized Rapidly-Exploring Random Trees (RRT)
 
+Inpired to PythonRobotics
+
 """
 
 import math                    # math functions (sqrt, hypot, cos, sin, atan2, etc.)
@@ -48,6 +50,7 @@ class RRT:
                  max_iter=500,
                  play_area=None,
                  robot_radius=0.0,
+                 seed = None
                  ):
         """
         Setting Parameter
@@ -74,6 +77,9 @@ class RRT:
         self.obstacle_list = obstacle_list             # list of circular obstacles (x, y, radius)
         self.node_list = []                            # storage for all nodes in the tree
         self.robot_radius = robot_radius               # inflate obstacles by robot radius
+
+        if seed is not None:
+            random.seed(seed)
 
     def planning(self, animation=True):
         """
