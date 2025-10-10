@@ -127,13 +127,7 @@ dock-other
 rostopic pub /limo1/ref limo_description/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
 ```
 
-7. For debug mode (2 robots follow a predefined trajectory):
-
-```
-roslaunch limo_description multiple_robots.launch start_controller:=true debug:=true
-```
-
-8. To set a specific reference for the first robot
+7. To set a specific reference for the first robot
 
 ```
 rostopic pub /limo0/ref limo_description/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
@@ -145,6 +139,24 @@ rostopic pub /limo0/ref limo_description/Reference "{x_d: 0.5, y_d: 0.0, theta_d
 roslaunch limo_description planner_rrt.py
 roslaunch limo_description planner_voronoi.py
 ```
+
+
+
+### Options
+
+O1. For debug mode (2 robots follow a predefined trajectory):
+
+```
+roslaunch limo_description multiple_robots.launch start_controller:=true debug:=true
+```
+
+O2. To generate always the same map (stored in $(find map_pkg)/config/full_config.yaml): 
+
+```
+roslaunch limo_description multiple_robots.launch start_controller:=true generate_new_config:=false
+```
+
+
 
 
 

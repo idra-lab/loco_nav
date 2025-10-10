@@ -6,21 +6,22 @@
   <arg name="map_env_params_file" default="$(find map_pkg)/config/map_config.yaml" />
   <arg name="gen_map_params_file" default="$(find map_pkg)/config/full_config.yaml" />
   
-  <arg name="generate_new_map_config" default="true" />
+  <arg name="generate_new_config" default="false" />
   
   <arg name="elements_models_path" default="$(find map_pkg)/models" />
   <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
   <arg name="victims_activated" default="false" />
    
-   
-  <node pkg="map_pkg" type="delete_full_config.sh" name="delete_config" output="screen"/>
+  <node pkg="map_pkg" type="delete_full_config.sh" name="delete_config" output="screen" if="$(arg generate_new_config)" />
+
+
 
 
   <!-- Generate the config file  and load params into param server-->
-  <node pkg="map_pkg" type="generate_config_file.py" name="generate_config_file" output="screen">
+  <node pkg="map_pkg" type="generate_config_file.py" name="generate_config_file" output="screen" >
     <param name="map_env_params_file" value="$(arg map_env_params_file)" />
     <param name="gen_map_params_file" value="$(arg gen_map_params_file)" />
-    <param name="generate_new_config" value="$(arg generate_new_map_config)" />
+    <param name="generate_new_config" value="$(arg generate_new_config)" />
     <param name="victims_activated" value="$(arg victims_activated)" />
   </node>
 
@@ -77,7 +78,7 @@ output="screen">
   <!-- Create PGM map based on published borders and obstacles NNEDE only for nav2 it generates the
   dynamic_map.yaml and runs the mapserver-->
   <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen">
-    <rosparam command="load" file="$(arg map_env_params_file)" />
+    <rosparam command="load" file="$(arg gen_map_params_file)" />
   </node>
     
   
