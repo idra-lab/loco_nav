@@ -9,6 +9,7 @@ import numpy as np
 from planners.logger import logger
 from planners.dubins import dubins_shortest_path
 
+from _viz_mixin import _VizMixin
 
 def circles (x1, y1, x2, y2, r):
     """
@@ -54,7 +55,7 @@ class Cell:
         return self._next
     
 
-class DP:
+class DP(_VizMixin):
     def __init__(self, points, fixed_angles, k_max, discretizations, refinements, def_thetas=None):
         if def_thetas:
             for i in range(len(def_thetas)):
