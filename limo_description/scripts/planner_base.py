@@ -131,6 +131,8 @@ class PlannerBase:
             robot_radius=self.params.robot_radius
         )
         path = rrt.planning(animation=True)
+        # Reverse path to start->goal order
+        path = path[::-1]
         return path
 
     def send_path(self, path):
