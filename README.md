@@ -133,10 +133,16 @@ rostopic pub /limo1/ref loco_planning/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0
 rostopic pub /limo0/ref loco_planning/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
 ```
 
-9. To test an RRT planner or a voronoi planner (alternative to 8.)
+8. To test an RRT planner (alternative to 7.) (first do point 4.)
 
 ```
 roslaunch loco_planning planner_rrt.py
+```
+
+9. To test an voronoi planner (alternative to 7.)
+
+```
+roslaunch loco_planning labyrinth.launch start_controller:=true
 roslaunch loco_planning planner_voronoi.py
 ```
 
@@ -157,6 +163,53 @@ roslaunch loco_planning multiple_robots.launch start_controller:=true generate_n
 ```
 
 
+
+### **Acquire a Map of a Labyrinth**
+
+1.  launch the simulation with the Labyrinth, the **gmapping** package and the LIDAR sensor enabled: 
+
+```
+roslaunch loco_planning labyrinth_mapping.launch sensors:=true
+```
+
+2. Move around with the keyboard till you have acquired the whole map, the control is done by the teleop package which sets desired speeds.
+3. Finally, store the map inside map_pkg/maps folder
+
+```
+roscd map_pkg/maps
+rosrun map_server map_saver -f $(rospack find map_pkg)/maps/labyrinth
+```
+
+4. Note that the map_server stores absolute path for the image location in labyrinth.yaml so you need to manually make it relative 
+
+```
+roscd map_pkg/maps
+rosrun map_server map_saver -f $(rospack find map_pkg)/maps/labyrinth
+```
+
+5. Note that the map_server stores absolute path for the image location in labyrinth.yaml so you need to manually make it relative
+
+```
+image: labyrinth.pgm
+```
+
+6. As an alternative to 4. and 5.  you can run directly the customized script
+
+```
+rosrun map_pkg save_map.py labyrinth
+```
+
+
+
+### **Navigate the Labyrinth**
+
+1.  launch the simulation with the Labyrinth, the **amcl** localization package and the LIDAR sensor enabled: 
+
+```
+roslaunch loco_planning labyrinth.launch start_controller:=true
+```
+
+2. 
 
 
 
