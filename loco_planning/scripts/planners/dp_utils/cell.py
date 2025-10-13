@@ -1,7 +1,8 @@
 import numpy as np
 
+
 class Cell:
-    def __init__(self, _angle=np.nan, _length=0., _next=None):
+    def __init__(self, _angle=np.nan, _length=0.0, _next=None):
         self._angle = _angle
         self._length = _length
         self._next = _next
@@ -12,5 +13,5 @@ class Cell:
     def l(self):
         return self._length
 
-    def prev(self):
+    def next(self):
         return self._next

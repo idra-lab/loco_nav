@@ -19,7 +19,8 @@ from tf.transformations import euler_from_quaternion
 from utils.math_tools import unwrap_vector, unwrap_angle
 from matplotlib import pyplot as plt
 from termcolor import colored
-from controllers.lyapunov import LyapunovController, LyapunovParams, Robot
+from lyapunov import LyapunovController, LyapunovParams, Robot
+
 import params as conf
 np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
 import argparse
@@ -81,6 +82,7 @@ class Controller():
 
     def start_controller(self):
         ros.init_node(f'{self.robot_name}_controller', anonymous=False, log_level=ros.FATAL)
+        ros._namespace = f"/{self.robot_name}"
         ros.on_shutdown(self.on_shutdown)
         self.startPublisherSubscribers()
         self.initVars()
