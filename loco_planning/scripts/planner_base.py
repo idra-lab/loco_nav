@@ -14,10 +14,11 @@ from termcolor import  colored
 import sys
 import rosnode
 import threading
-from  utils.communication_utils import getInitialStateFromOdom
+from  utils.communication_utils import getInitialStateFromOdom, checkRosMaster, launchFileNode, launchFileGeneric
 import numpy as np
 from planners.dubins import dubins_shortest_path, get_discretized_path_from_dubins, plotdubins
 from planners.dp import DP
+import os
 
 class PlannerParamsBase:
     def __init__(self, robot_radius=0.2, v_max=0.1, curvature_max=1.):
@@ -35,6 +36,18 @@ class PlannerBase:
         self.REFERENCE_TYPE = 'DUBINS_MULTIPOINT' #'PIECE_WISE', 'DUBINS' , 'DUBINS_MULTIPOINT'
         self.DEBUG = debug
 
+        self.obstacle_list = []
+        self.obstacles_ready = False
+        self.map_ready = False
+        self.goal_ready = False
+        self.computed_path = False
+
+    def ros_init(self, start_simulation=False, regenerate_map=True):
+        if start_simulation:
+            self.startSimulation(regenerate_map=regenerate_map)
+        rospy.init_node("planner_node", anonymous=False)  # with anonymous=False ROS will handle killing any old instance automatically.
+
+        # ROS interfaces
         # check if controller node is running
         nodes = rosnode.get_node_names()
         node_name = f"/{self.robot_name}/controller"
@@ -46,19 +59,13 @@ class PlannerBase:
             print(colored(f"Node {node_name} not found. Please make sure you started the controller", "red"))
             sys.exit()
 
-        self.obstacle_list = []
-        self.obstacles_ready = False
-        self.map_ready = False
-        self.goal_ready = False
-        self.computed_path = False
-
-        # ROS interfaces
         rospy.Subscriber("/map_borders", Polygon, self.map_borders_cb)
         rospy.Subscriber("/obstacles", ObstacleArrayMsg, self.obstacles_cb)
         rospy.Subscriber("/gates", PoseArray, self.goal_cb)
-        self.ref_pub = rospy.Publisher("/"+self.robot_name+"/ref", Reference, queue_size=10)
+        self.ref_pub = rospy.Publisher("/" + self.robot_name + "/ref", Reference, queue_size=10)
         self.rate = rospy.Rate(1 / self.dt)  # 100Hz loop, adjust as needed
         rospy.loginfo("Planner initialized. Waiting for map, obstacles, and goal...")
+
 
     # ---------- Callbacks ----------
     def map_borders_cb(self, msg):
@@ -141,7 +148,7 @@ class PlannerBase:
             rospy.logwarn("No path found.")
         else:
 
-            rospy.loginfo("RRT: Path found with %d waypoints.", len(path))
+            rospy.loginfo("Path found with %d waypoints.", len(path))
 
             # ---- Plot first (non-blocking) ----
             plt.plot([x for (x, y) in path],
@@ -255,11 +262,21 @@ class PlannerBase:
             rospy.signal_shutdown("Finished RRT planning")
         self.computed_path = True
 
+    def startSimulation(self, regenerate_map=True):
+        os.system("pkill rosmaster")
+        os.system("pkill gzserver")
+        os.system("pkill gzclient")
+        os.system("pkill rviz")
+        checkRosMaster()
+        additional_args=["start_controller:=true"]
+        if not regenerate_map:
+            additional_args.append("generate_new_config:=false")
+        launchFileNode(package="loco_planning", launch_file="multiple_robots.launch", additional_args=additional_args)
+        rospy.sleep(6.)
 # ---------- Main ----------
 if __name__ == "__main__":
-    rospy.init_node("planner_node", anonymous=False) #with anonymous=False ROS will handle killing any old instance automatically.
     planner = PlannerBase(robot_radius=0.2, v_max=0.3, curvature_max=3., robot_name="limo0", debug=False)
-
+    planner.ros_init(start_simulation=False)
     while not rospy.is_shutdown():
         # be sure you have received all messages
         if not planner.computed_path and planner.goal_ready and planner.map_ready and planner.map_ready:
