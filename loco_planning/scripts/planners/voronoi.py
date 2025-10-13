@@ -95,7 +95,7 @@ class VoronoiBasePlanner:
             plt.plot(sx, sy, "ob", markersize=10, label="start")
             plt.plot(gx, gy, "or", markersize=10, label="goal")
             plt.grid(True)
-            plt.plot(sample_x, sample_y, ".g", label="Voronoi vertices")
+            #plt.plot(sample_x, sample_y, ".g", label="Voronoi vertices")
             plt.axis("equal")
             plt.legend(loc="best")
 
@@ -103,7 +103,7 @@ class VoronoiBasePlanner:
         self.road_map = self.generate_road_map(sample_x, sample_y, self.robot_radius, self.obstacle_tree)
 
         # 3) Run Dijkstra over the roadmap (DijkstraSearch accepts the samples and adjacency)
-        rx, ry = DijkstraSearch(show_animation).search_simple(sx, sy, gx, gy, sample_x, sample_y, self.road_map)
+        rx, ry = DijkstraSearch(show_animation).search_static(sx, sy, gx, gy, sample_x, sample_y, self.road_map)
         path = np.column_stack((rx, ry))
         return path
 
