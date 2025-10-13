@@ -36,7 +36,6 @@ catkin_install_python(
     scripts/planner_voronoi.py
     scripts/planners/rrt.py
     scripts/planners/dubins.py
-    scripts/convert_labyrinth_map.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   

@@ -12,7 +12,7 @@
     <!-- needed for lidar -->
     <arg name="sensors" default="true"/>
 
-    <arg name="start_controller" default="false"/>
+    <arg name="start_controller" default="true"/>
     <arg name="debug" default="false"/>
 
     <!-- Set parameters -->
@@ -41,7 +41,7 @@
         <arg name="debug" value="false"/>
     </include>
 
-    <!--load map for amcl-->
+    <!--load recorded map for amcl-->
     <node name="map_server" pkg="map_server" type="map_server" args="$(find map_pkg)/maps/labyrinth.yaml"/>
 
     <group ns="limo0">
@@ -63,10 +63,9 @@
           <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
             <param name="rate" value="100"/>
         </node>
-        <!--init amcl-->
 
 
-        <!--publish map -> odom TF -->
+        <!--AMCL: publish map -> odom TF -->
         <node pkg="amcl" type="amcl" name="amcl">
              <!-- Fix: remap static_map request to global -->
             <remap from="static_map" to="/static_map"/>
@@ -76,7 +75,7 @@
             <!-- Initial pose for limo0 -->
             <param name="initial_pose_x" value="$(arg x_pos)"/>
             <param name="initial_pose_y" value="$(arg y_pos)"/>
-             <param name="initial_pose_a" value="$(arg yaw_pos)"/>
+            <param name="initial_pose_a" value="$(arg yaw_pos)"/>
         </node>
 
 
@@ -88,51 +87,12 @@
 
     </group>
 
-    <group ns="limo1">
-        <arg name="robot_id" value="1"/>
-
-        <!-- Description with per-robot namespace -->
-        <include file="$(find limo_description)/launch/upload.launch">
-            <arg name="robot_id" default="$(arg robot_id)"/>
-            <arg name="sensors" default="$(arg sensors)"/>
-        </include>
-
-        <!--spawn
-        the limo robot-->
-        <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
-              args="-urdf -param robot_description -model limo$(arg robot_id) -x $(arg x_pos1) -y $(arg y_pos1) -z 0.2 -Y $(arg yaw_pos1)"/>
-
-        <!-- TF & joints -->
-        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-            <param name="rate" value="100"/>
-        </node>
-
-        <!--publish map -> odom TF -->
-        <node pkg="amcl" type="amcl" name="amcl">
-                    <!-- Fix: remap static_map request to global -->
-            <remap from="static_map" to="/static_map"/>
-            <param name="odom_frame_id" value="limo$(arg robot_id)/odom"/>
-            <param name="base_frame_id" value="limo$(arg robot_id)/base_link"/>
-            <param name="global_frame_id" value="map"/>
-            <!-- Initial pose for limo1 -->
-            <param name="initial_pose_x" value="$(arg x_pos1)"/>
-            <param name="initial_pose_y" value="$(arg y_pos1)"/>
-            <param name="initial_pose_a" value="$(arg yaw_pos1)"/>
-        </node>
-
-        <group if="$(arg start_controller)">
-            <node pkg="loco_planning" type="controller.py" name="controller" output="screen"
-                  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
-        </group>
 
 
-    </group>
-
-    <!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS-->
-    <node pkg="loco_planning" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen"/>
+    <!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS and publish them-->
+    <node pkg="map_pkg" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen"/>
 
     <!-- RViz (optional) -->
-    <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"
-          args="-d $(find loco_planning)/rviz/conf_labyrinth.rviz"/>
+    <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find loco_planning)/rviz/conf_labyrinth.rviz"/>
 
 </launch>

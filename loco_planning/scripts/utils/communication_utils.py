@@ -39,7 +39,6 @@ def launchFileNode(package,launch_file, additional_args=None):
         cli_args.extend(additional_args)
 
     roslaunch_args = cli_args[1:]
-    print(colored(f"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA {roslaunch_args}", "red"))
     roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], roslaunch_args)]
     parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
     parent.start()

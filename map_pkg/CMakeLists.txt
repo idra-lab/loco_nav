@@ -39,6 +39,8 @@ catkin_install_python(
     scripts/generate_config_file.py
     scripts/ground_truth_odom.py
     scripts/geo_utility.py 
+    scripts/save_map.py 
+    scripts/convert_labyrinth_map.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
@@ -87,7 +89,10 @@ install(DIRECTORY launch/
   PATTERN ".svn" EXCLUDE)
   
   
-    
+ install(DIRECTORY maps/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/maps
+  PATTERN ".svn" EXCLUDE)
+  
   
     
  install(DIRECTORY config/

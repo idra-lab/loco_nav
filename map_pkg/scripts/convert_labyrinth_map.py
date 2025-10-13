@@ -33,15 +33,15 @@ class MapToObstacles:
         contours, _ = cv2.findContours(occupied, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         #debug
-        # plt.imshow(occupied, cmap="gray")
-        # for cnt in contours:
-        #     xs = cnt[:, 0, 0]
-        #     ys = cnt[:, 0, 1]
-        #     plt.plot(xs, ys, 'r-')
-        # plt.xlabel("x[m]")
-        # plt.ylabel("y[m]")
-        # plt.show(block=False)
-        # plt.pause(0.01)
+        #plt.imshow(occupied, cmap="gray")
+        #for cnt in contours:
+        #    xs = cnt[:, 0, 0]
+        #    ys = cnt[:, 0, 1]
+        #    plt.plot(xs, ys, 'r-')
+        #plt.xlabel("x[m]")
+        #plt.ylabel("y[m]")
+        #plt.show(block=False)
+        #plt.pause(0.01)
 
         arr = ObstacleArrayMsg()
         arr.header = msg.header
@@ -97,9 +97,13 @@ class MapToObstacles:
                 m.pose.position.x = x
                 m.pose.position.y = y
                 m.pose.position.z = 0.05
-                m.scale.x = 0.05
-                m.scale.y = 0.05
-                m.scale.z = 0.05
+                m.pose.orientation.x = 0
+                m.pose.orientation.y = 0
+                m.pose.orientation.z =0
+                m.pose.orientation.w =1
+                m.scale.x = 0.2
+                m.scale.y = 0.2
+                m.scale.z = 0.2
                 m.color.a = 1.0
                 m.color.r = 0.0
                 m.color.g = 1.0
@@ -134,7 +138,7 @@ class MapToObstacles:
 
 if __name__ == "__main__":
     try:
-        p = MapToObstacles(step_m=0.5)
+        p = MapToObstacles(step_m=0.2)
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
