@@ -7,7 +7,7 @@ import rospy
 import math
 from geometry_msgs.msg import Polygon, PoseArray
 from obstacles_msgs.msg import ObstacleArrayMsg
-from limo_description.msg import Reference   # <-- your custom message
+from loco_planning.msg import Reference   # <-- your custom message
 from planners.rrt import RRT
 import params as conf
 from termcolor import  colored

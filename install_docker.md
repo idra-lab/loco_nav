@@ -68,7 +68,7 @@ $ ./install_docker.sh
     source $HOME/ros_ws/install/setup.bash
     export PATH=/opt/openrobots/bin:$PATH
     export LOCONAV_DIR=$HOME/ros_ws/src/loco_nav
-    export PYTHONPATH=/opt/openrobots/lib/python3.8/site-packages:$LOCONAV_DIR/limo_description/loco_nav/scripts:$PYTHONPATH
+    export PYTHONPATH=/opt/openrobots/lib/python3.8/site-packages:$LOCONAV_DIR/loco_planning/scripts:$PYTHONPATH
     export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/opt/openrobots/share/
     alias real_robot='export ROS_IP=$LIMO_IP'
     alias sim='unset ROS_IP'

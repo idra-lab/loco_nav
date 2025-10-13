@@ -14,7 +14,7 @@ from utils.velocity_generator import VelocityGenerator
 from utils.trajectory_generator import Trajectory, ModelsList
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
-from limo_description.msg import Reference
+from loco_planning.msg import Reference
 from tf.transformations import euler_from_quaternion
 from utils.math_tools import unwrap_vector, unwrap_angle
 from matplotlib import pyplot as plt
@@ -263,7 +263,7 @@ class Controller():
         # plt.grid(True)
         # plt.show(block=True)
 
-        plt.show(block=True)
+        plt.show(block=False)
 
     def on_shutdown(self):
         print(f"[{self.robot_name}] received shutdown signal.")

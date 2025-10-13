@@ -7,8 +7,8 @@
   <arg name="shelfino_name" default="limo1" />
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
-  <!--arg name="rviz_config_file" default="$(find limo_description)/rviz/model_display.rviz" /-->
-  <!--arg name="gazebo_world_file" default="$(find limo_description)/worlds/empty.world" /-->
+  <!--arg name="rviz_config_file" default="$(find loco_planning)/rviz/model_display.rviz" /-->
+  <!--arg name="gazebo_world_file" default="$(find loco_planning)/worlds/empty.world" /-->
   <arg name="spawn_shelfino" default="false" />
   <arg name="shelfino_init_x" default="0.0" />
   <arg name="shelfino_init_y" default="0.0" />

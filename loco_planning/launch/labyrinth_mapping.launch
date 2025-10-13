@@ -58,7 +58,7 @@
       <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"  args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
 
     </group>
-    <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find limo_description)/rviz/conf_mapping.rviz" />
+    <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find loco_planning)/rviz/conf_mapping.rviz" />
 
   </group>
 
@@ -67,7 +67,7 @@
     <group ns="limo0">
 
       <!-- this is just for rviz-->
-      <include file="$(find limo_description)/launch/upload.launch">
+      <include file="$(find loco_planning)/launch/upload.launch">
         <arg name="robot_id" default="$(arg robot_id)" />
       </include>
 
@@ -88,7 +88,7 @@
     </group>
 
     <!-- RViz (optional) -->
-    <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"  args="-d $(find limo_description)/rviz/conf_real.rviz" />
+    <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"  args="-d $(find loco_planning)/rviz/conf_real.rviz" />
 
 
   </group>

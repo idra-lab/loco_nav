@@ -77,9 +77,9 @@ output="screen">
     
   <!-- Create PGM map based on published borders and obstacles NNEDE only for nav2 it generates the
   dynamic_map.yaml and runs the mapserver-->
-  <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen">
-    <rosparam command="load" file="$(arg gen_map_params_file)" />
-  </node>
+  <rosparam command="load" file="$(arg gen_map_params_file)" unless="$(arg generate_new_config)" />
+  <node pkg="map_pkg" type="create_map_pgm.py" name="create_map_pgm" output="screen"/>
+
     
   
 

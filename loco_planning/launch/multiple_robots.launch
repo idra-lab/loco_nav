@@ -43,8 +43,6 @@
 
   <!-- Spawn map publishes borders and obstacles-->
   <include file="$(find map_pkg)/launch/spawn_map.launch">
-    <param name="map_env_params_file" value="$(arg map_env_params_file)" />
-    <param name="generate_new_config" value="$(arg generate_new_config)" />
     <arg name="gen_map_params_file" value="$(arg gen_map_params_file)" />
     <arg name="gazebo_models_path" value="$(arg gazebo_models_path)" />
     <arg name="elements_models_path" value="$(arg elements_models_path)" />
@@ -87,7 +85,7 @@
       args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
       
           <group if="$(arg start_controller)">
-  <node pkg="limo_description" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
+  <node pkg="loco_planning" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
 </group>
   
       
@@ -118,7 +116,7 @@
       
       
     <group if="$(arg start_controller)">
-  <node pkg="limo_description" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
+  <node pkg="loco_planning" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
 </group>
   
       
@@ -158,6 +156,6 @@
   <!--     </group> -->
 
   <!-- RViz (optional) -->
-  <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find limo_description)/rviz/conf_multiple.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find loco_planning)/rviz/conf_multiple.rviz" />
 
 </launch>

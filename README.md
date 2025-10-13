@@ -106,13 +106,13 @@ roslaunch
 3. To start the simulation
 
 ```
-roslaunch limo_description multiple_robots.launch
+roslaunch loco_planning multiple_robots.launch
 ```
 
 4. To start the simulation + the controllers
 
 ```
-roslaunch limo_description multiple_robots.launch start_controllers:=true
+roslaunch loco_planning multiple_robots.launch start_controllers:=true
 ```
 
 5. Open another docker terminal with the alias **dock-other** attached to the same image:
@@ -124,20 +124,20 @@ dock-other
 6. Publish the reference for the robots e.g.:
 
 ```
-rostopic pub /limo1/ref limo_description/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
+rostopic pub /limo1/ref loco_planning/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
 ```
 
 7. To set a specific reference for the first robot
 
 ```
-rostopic pub /limo0/ref limo_description/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
+rostopic pub /limo0/ref loco_planning/Reference "{x_d: 0.5, y_d: 0.0, theta_d: 0.0, v_d: 0.1, omega_d: 0.0}"
 ```
 
 9. To test an RRT planner or a voronoi planner (alternative to 8.)
 
 ```
-roslaunch limo_description planner_rrt.py
-roslaunch limo_description planner_voronoi.py
+roslaunch loco_planning planner_rrt.py
+roslaunch loco_planning planner_voronoi.py
 ```
 
 
@@ -147,13 +147,13 @@ roslaunch limo_description planner_voronoi.py
 O1. For debug mode (2 robots follow a predefined trajectory):
 
 ```
-roslaunch limo_description multiple_robots.launch start_controller:=true debug:=true
+roslaunch loco_planning multiple_robots.launch start_controller:=true debug:=true
 ```
 
 O2. To generate always the same map (stored in $(find map_pkg)/config/full_config.yaml): 
 
 ```
-roslaunch limo_description multiple_robots.launch start_controller:=true generate_new_config:=false
+roslaunch loco_planning multiple_robots.launch start_controller:=true generate_new_config:=false
 ```
 
 
@@ -183,13 +183,13 @@ real_robot
 4. run (without lidar)
 
 ```
-roslaunch limo_description labyrinth_mapping real_robot:=true 
+roslaunch loco_planning labyrinth_mapping real_robot:=true 
 ```
 
 5. run (with lidar)
 
 ```
-roslaunch limo_description labyrinth_mapping real_robot:=true sensors:=true
+roslaunch loco_planning labyrinth_mapping real_robot:=true sensors:=true
 ```
 
 N.B. if you want to switch back to sim run the alias **sim**
@@ -209,6 +209,6 @@ To be able to keep the plots **alive** at the end of the program and to have acc
 You can run separately the controllers for debugging, by running
 
 ```
-ros_ws/src/loco_nav/limo_description/scripts/spawn_controllers.py
+ros_ws/src/loco_nav/loco_planning/scripts/spawn_controllers.py
 ```
 

@@ -81,7 +81,7 @@
 
 
         <group if="$(arg start_controller)">
-            <node pkg="limo_description" type="controller.py" name="controller" output="screen"
+            <node pkg="loco_planning" type="controller.py" name="controller" output="screen"
                   args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
         </group>
 
@@ -121,7 +121,7 @@
         </node>
 
         <group if="$(arg start_controller)">
-            <node pkg="limo_description" type="controller.py" name="controller" output="screen"
+            <node pkg="loco_planning" type="controller.py" name="controller" output="screen"
                   args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
         </group>
 
@@ -129,10 +129,10 @@
     </group>
 
     <!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS-->
-    <node pkg="limo_description" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen"/>
+    <node pkg="loco_planning" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen"/>
 
     <!-- RViz (optional) -->
     <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"
-          args="-d $(find limo_description)/rviz/conf_labyrinth.rviz"/>
+          args="-d $(find loco_planning)/rviz/conf_labyrinth.rviz"/>
 
 </launch>
