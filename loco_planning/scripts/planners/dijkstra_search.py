@@ -165,8 +165,11 @@ class DijkstraSearch:
             #u = min(Q, key=lambda x: dist[x])
             u = self.mindistance(Q, dist)
             plt.plot(node_x[u], node_y[u], 'b.')
-            plt.show()
-            plt.pause(0.000001)
+            # ✅ draw immediately even if non-blocking
+            plt.draw()
+            plt.pause(0.001)
+            plt.show(block=False)
+
             Q.remove(u)
             visited.append(u)  # mark as visited
 
@@ -199,7 +202,9 @@ class DijkstraSearch:
         for i in range(len(rx)):
             plt.plot(rx[i], ry[i], 'or')
             plt.ioff()
-            plt.show()
+            plt.draw()
+            plt.pause(0.0001)
+            plt.show(block=False)
         return rx, ry
 
     def search(self, sx, sy, gx, gy, node_x, node_y, edge_ids_list):

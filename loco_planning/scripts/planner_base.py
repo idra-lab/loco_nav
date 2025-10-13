@@ -154,8 +154,9 @@ class PlannerBase:
             plt.plot([x for (x, y) in path],
                      [y for (x, y) in path], '-r')
             plt.grid(True)
+            # draw immediately
             plt.draw()
-
+            plt.pause(0.001)
             # compute reference from path
             self.reference = self.computeReferenceFromPath(path)
             if self.DEBUG:

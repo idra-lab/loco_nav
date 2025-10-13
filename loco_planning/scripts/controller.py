@@ -263,7 +263,7 @@ class Controller():
         # plt.grid(True)
         # plt.show(block=True)
 
-        plt.show(block=False)
+        plt.show(block=True)
 
     def on_shutdown(self):
         print(f"[{self.robot_name}] received shutdown signal.")
