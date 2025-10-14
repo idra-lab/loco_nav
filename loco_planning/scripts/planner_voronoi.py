@@ -2,10 +2,8 @@
 import matplotlib
 matplotlib.use('TkAgg')
 import rospy
-import rospy
 from planner_base import PlannerParamsBase, PlannerBase
 from planners.voronoi import VoronoiBasePlanner
-import math
 import numpy as np
 
 class VoronoiPlannerParams(PlannerParamsBase):

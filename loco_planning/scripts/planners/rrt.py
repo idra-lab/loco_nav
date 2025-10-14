@@ -74,7 +74,7 @@ class RRT:
         self.path_resolution = path_resolution         # discretization step along an edge
         self.goal_sample_rate = goal_sample_rate       # % chance (0–100) to sample the goal directly
         self.max_iter = max_iter                       # maximum iterations to attempt
-        self.obstacle_list = obstacle_list             # list of circular obstacles (x, y, radius)
+        self.obstacle_list = obstacle_list             # list of obstacles (x, y, radius)
         self.node_list = []                            # storage for all nodes in the tree
         self.robot_radius = robot_radius               # inflate obstacles by robot radius
 

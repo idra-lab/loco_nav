@@ -39,7 +39,7 @@ RUN apt-get update && apt-get install -y \
     && locale-gen en_US en_US.UTF-8
 
 # Install limo_ros from PyPI
-RUN pip3 install --no-cache-dir pylimo
+RUN pip3 install --no-cache-dir pylimo pyclipper
 
 # utils
 RUN apt-get install -y iputils-ping gedit 

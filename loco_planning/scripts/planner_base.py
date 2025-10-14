@@ -14,7 +14,7 @@ from termcolor import  colored
 import sys
 import rosnode
 import threading
-from  utils.communication_utils import getInitialStateFromOdom, checkRosMaster, launchFileNode, launchFileGeneric
+from  utils.communication_utils import getInitialStateFromOdom, checkRosMaster, launchFileNode
 import numpy as np
 from planners.dubins import dubins_shortest_path, get_discretized_path_from_dubins, plotdubins
 from planners.dp import DP

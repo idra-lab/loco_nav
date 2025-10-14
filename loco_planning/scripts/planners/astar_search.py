@@ -9,12 +9,10 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import math
-import numpy as np
-import sys
 from collections import defaultdict
 from heapq import heappush, heappop
 from utils.utils import get8NeighborsCost
-import time
+
 
 class AstarSearch:
 

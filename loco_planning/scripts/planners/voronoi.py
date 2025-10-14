@@ -24,8 +24,10 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree, Voronoi
+from planners.kdtree import KDTree
 import sys
 import pathlib
+from typing import Union
 
 # Allow importing sibling package (for DijkstraSearch)
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
@@ -33,7 +35,6 @@ from planners.dijkstra_search import DijkstraSearch
 
 # Toggle to visualize steps
 show_animation = True
-
 
 class VoronoiBasePlanner:
     """
@@ -83,7 +84,9 @@ class VoronoiBasePlanner:
         oy = [p[1] for p in self.obstacle_list ]
 
         # KD-tree accelerates nearest-obstacle distance queries used in collision checks
+        # scipy implementation
         self.obstacle_tree = cKDTree(np.vstack((ox, oy)).T)
+        #self.obstacle_tree = KDTree(self.obstacle_list)
 
         # 1) Sample candidate nodes from Voronoi diagram of obstacles (+ start/goal)
         sample_x, sample_y = self.voronoi_sampling(sx, sy, gx, gy, ox, oy)
@@ -130,14 +133,19 @@ class VoronoiBasePlanner:
 
         # March and check clearance
         for _ in range(n_step):
+            # scipy
             dist, _ = obstacle_kd_tree.query([x, y])
+            #_, dist = obstacle_kd_tree.nearest_neighbor([x, y], obstacle_kd_tree.tree)
             if dist <= rr:
                 return True  # collision
             x += rr * math.cos(yaw)
             y += rr * math.sin(yaw)
 
         # Also ensure the goal endpoint itself is safe
+        #scipy
         dist, _ = obstacle_kd_tree.query([gx, gy])
+        #_, dist = obstacle_kd_tree.nearest_neighbor([gx, gy], obstacle_kd_tree.tree)
+
         if dist <= rr:
             return True
 
@@ -148,7 +156,7 @@ class VoronoiBasePlanner:
         voronoi_node_x: list[float],
         voronoi_node_y: list[float],
         rr: float,
-        obstacle_tree: cKDTree):
+        obstacle_tree: Union[KDTree, cKDTree]):
         """Construct adjacency list for the roadmap.
 
         For each node, query its neighbors by distance and try to connect up to
@@ -164,11 +172,14 @@ class VoronoiBasePlanner:
 
         # KD-tree over nodes for fast KNN queries
         node_tree = cKDTree(np.vstack((voronoi_node_x, voronoi_node_y)).T)
+        #node_tree = KDTree(list(np.vstack((voronoi_node_x, voronoi_node_y)).T))
 
         # For each node, walk outward to nearest others and attempt connections
         for (i, ix, iy) in zip(range(n_sample), voronoi_node_x, voronoi_node_y):
             # Query *all* neighbors ordered by distance; we'll stop early at N_KNN
             dists, indexes = node_tree.query([ix, iy], k=n_sample)
+            #TODO implementation for multiple samples
+            #_, dist = node_tree.nearest_neighbor([ix, ix], node_tree.tree, k=n_sample)
             edge_id = []
 
             # indexes[0] == i (self); start from 1 to skip self
