@@ -19,7 +19,7 @@ from tf.transformations import euler_from_quaternion
 from utils.math_tools import unwrap_vector, unwrap_angle
 from matplotlib import pyplot as plt
 from termcolor import colored
-from lyapunov import LyapunovController, LyapunovParams, Robot
+from controllers.lyapunov import LyapunovController, LyapunovParams, Robot
 
 import params as conf
 np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
@@ -65,8 +65,8 @@ class Controller():
         self.des_y = p0_y
         self.des_theta = yaw0
 
-        vel_gen = VelocityGenerator(simulation_time=20., DT=conf.robot_params[self.robot_name]['dt'])
-        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.1, omega_max_=0.05)
+        vel_gen = VelocityGenerator(simulation_time=10., DT=conf.robot_params[self.robot_name]['dt'])
+        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.4, omega_max_=0.1)
         self.trajectory = Trajectory(ModelsList.UNICYCLE, self.des_x, self.des_y, self.des_theta, DT=conf.robot_params[self.robot_name]['dt'],
                                v=v_ol, omega=omega_ol, v_dot=v_dot_ol, omega_dot=omega_dot_ol)
 
@@ -81,7 +81,7 @@ class Controller():
                                        queue_size=1, tcp_nodelay=True)
 
     def start_controller(self):
-        ros.init_node(f'{self.robot_name}_controller', anonymous=False, log_level=ros.FATAL)
+        ros.init_node(f'{self.robot_name}_controller_node', anonymous=False, log_level=ros.FATAL)
         ros._namespace = f"/{self.robot_name}"
         ros.on_shutdown(self.on_shutdown)
         self.startPublisherSubscribers()
@@ -103,7 +103,13 @@ class Controller():
                 if self.DEBUG:
                     self.des_x, self.des_y, self.des_theta, self.v_d, self.omega_d, self.v_dot_d, self.omega_dot_d, traj_finished = self.trajectory.evalTraj(self.time)
                     if traj_finished:
-                        break
+                        print("Ending simulation...")
+                        self.plotData()
+                        # send zero
+                        self.send_commands(0., 0.)
+                        ros.signal_shutdown("Simulation finished")
+                        return
+
                 #print(f"{self.robot_name} des_x: {self.des_x}, des_y: {self.des_y}")
 
                 self.des_theta, self.old_theta = unwrap_angle(self.des_theta, self.old_theta)
@@ -116,13 +122,8 @@ class Controller():
                 # to avoid issues of dt 0.0009999
                 self.time = np.round(self.time + np.array([conf.robot_params[self.robot_name]['dt']]),  4)
 
-                if self.DEBUG:
-                    if self.time == 20:
-                        print("Ending simulation...")
-                        self.plotData()
-                        # send zero
-                        self.send_commands(0., 0.)
-                        break
+
+
 
             except (ros.ROSInterruptException, ros.service.ServiceException):
                 self.send_commands(0., 0.)
