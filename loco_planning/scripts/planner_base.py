@@ -9,6 +9,7 @@ from geometry_msgs.msg import Polygon, PoseArray
 from obstacles_msgs.msg import ObstacleArrayMsg
 from loco_planning.msg import Reference   # <-- your custom message
 from planners.rrt import RRT
+from planners.rrt_star import RRTStar
 import params as conf
 from termcolor import  colored
 import sys
@@ -277,7 +278,8 @@ class PlannerBase:
 # ---------- Main ----------
 if __name__ == "__main__":
     planner = PlannerBase(robot_radius=0.2, v_max=0.3, curvature_max=3., robot_name="limo0", debug=False)
-    planner.ros_init(start_simulation=False)
+    # to test RRT /RRTStar planner.ros_init(start_simulation=True, regenerate_map=False)
+    planner.ros_init(start_simulation=False, regenerate_map=True)
     while not rospy.is_shutdown():
         # be sure you have received all messages
         if not planner.computed_path and planner.goal_ready and planner.map_ready and planner.map_ready:

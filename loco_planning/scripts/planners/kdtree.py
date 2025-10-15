@@ -199,7 +199,7 @@ class KDTree():
             # first Search right side (where query lies)
             best_point, best_dist = self.nearest_neighbor(query, node.right, best_point, best_dist)
             # Then Check Overlap: check If the search circle (radius = current best distance) crosses the split line on the left,
-            if query[axis] - best_dist <=                                                                           split_val:  # circle overlaps LEFT half-space we need to continue search on the left
+            if query[axis] - best_dist <= split_val:  # circle overlaps LEFT half-space we need to continue search on the left
                 best_point, best_dist = self.nearest_neighbor(query, node.left, best_point, best_dist)
 
         return best_point, best_dist
