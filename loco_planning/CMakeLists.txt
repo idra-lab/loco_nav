@@ -60,10 +60,23 @@ install(DIRECTORY scripts/
   PATTERN ".svn" EXCLUDE)
 
 
-install(DIRECTORY scripts/utils
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+install(DIRECTORY scripts/planners
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts/planners
+  PATTERN ".svn" EXCLUDE)
+
+
+install(DIRECTORY scripts/controllers
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts/controllers
 )
 
+install(DIRECTORY scripts/utils
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts/utils
+)
+
+install(DIRECTORY scripts/geometry
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts/geometry
+)
+  
   
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch

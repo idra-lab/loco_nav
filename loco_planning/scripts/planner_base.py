@@ -157,12 +157,14 @@ class PlannerBase:
             plt.grid(True)
             # draw immediately
             plt.draw()
-            plt.pause(0.001)
+            plt.pause(0.01)
+            plt.show(block=False)
+
+
             # compute reference from path
             self.reference = self.computeReferenceFromPath(path)
             if self.DEBUG:
                 plt.plot(self.reference[:, 0], self.reference[:, 1], "+k")
-            plt.show(block=False)
             threading.Thread(target=self.publish_reference, args=(self.reference,), daemon=True).start()
         return True
 
@@ -279,7 +281,7 @@ class PlannerBase:
 if __name__ == "__main__":
     planner = PlannerBase(robot_radius=0.2, v_max=0.3, curvature_max=3., robot_name="limo0", debug=False)
     # to test RRT /RRTStar planner.ros_init(start_simulation=True, regenerate_map=False)
-    planner.ros_init(start_simulation=False, regenerate_map=True)
+    planner.ros_init(start_simulation=True, regenerate_map=True)
     while not rospy.is_shutdown():
         # be sure you have received all messages
         if not planner.computed_path and planner.goal_ready and planner.map_ready and planner.map_ready:
