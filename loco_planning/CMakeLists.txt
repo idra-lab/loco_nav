@@ -21,31 +21,15 @@ catkin_package(
 
 catkin_install_python(
   PROGRAMS
-    scripts/params.py
-    scripts/unicycle.py
+    scripts/params.py  
     # Controllers  
     scripts/controller.py
     scripts/spawn_controllers.py
     scripts/controllers/lyapunov.py
-    # Utils
-    scripts/utils/velocity_generator.py
-    scripts/utils/communication_utils.py
-    scripts/utils/trajectory_generator.py
-    scripts/utils/math_tools.py
-    scripts/utils/utils.py
-    # Dubins
-    scripts/planners/dubins.py
     # Planners - Base
     scripts/planner_base.py
-    # Planners - RRT
-    scripts/planner_rrt.py
-    scripts/planners/rrt.py
     # Planners - Voronoi
     scripts/planner_voronoi.py
-    # Planners - Dubins Multipoint
-    scripts/planners/dp.py
-    scripts/planners/dp_utils/_viz_mixin.py
-    scripts/planners/dp_utils/cell.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
@@ -55,28 +39,22 @@ install(DIRECTORY msg/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/msg
   PATTERN ".svn" EXCLUDE)
 
-install(DIRECTORY scripts/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts
-  PATTERN ".svn" EXCLUDE)
-
-
-install(DIRECTORY scripts/planners
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts/planners
-  PATTERN ".svn" EXCLUDE)
-
-
-install(DIRECTORY scripts/controllers
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts/controllers
-)
 
 install(DIRECTORY scripts/utils
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts/utils
-)
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  PATTERN ".svn" EXCLUDE)
 
 install(DIRECTORY scripts/geometry
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts/geometry
-)
-  
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  PATTERN ".svn" EXCLUDE)
+
+install(DIRECTORY scripts/controllers
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  PATTERN ".svn" EXCLUDE)
+
+install(DIRECTORY scripts/planners
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  PATTERN ".svn" EXCLUDE)
   
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
