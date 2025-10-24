@@ -12,17 +12,34 @@ $ ./install_docker.sh
 ```
 - If everything went smooth you should read: **To start docker, reboot the system!** You can now restart the PC so that all changes made can be applied.
 
-- If you look into your **host** Ubuntu home directory, you will see that the **trento_lab_home** directory has been created.
+- If you look into your **host** Ubuntu home directory, you will see that the **trento_lab_home** directory has been created with **/ros_ws/src** subfolders.
 
-- if you have troubles using **gedit** use other editors like  **vim** or **nano** in place of gedit
+- now you can clone the loco_nav code inside the  **trento_lab_home/ros_ws/src** folder
 
-  -  Download the docker image from here. It will be slow.
+- 
 
-  ```
-  $ docker pull mfocchi/trento_lab_framework:introrob_upgrade
-  ```
 
-  - Now, you need to configure the bash environment of your Ubuntu machine as follows. Open the `bashrc` file from your home folder:
+```
+$ cd ~/trento_lab_home/ros_ws/src
+$ git clone https://github.com/idra-lab/loco_nav.git
+```
+
+- how you have two options: 
+
+  - A) Download the docker image from here:	
+
+    ```
+    docker pull mfocchi/trento_lab_framework:loco_nav
+    ```
+
+  - B) compile the docker image yourself:
+
+    ```
+    cd ~/trento_lab_home/ros_ws/src/loco_nav/docker/loco_nav
+    docker build -t mfocchi/trento_lab_framework:loco_nav -f Dockerfile .
+    ```
+
+- Now, you need to configure the bash environment of your Ubuntu machine as follows. Open the `bashrc` file from your home folder:
 
 
   ```
@@ -32,58 +49,42 @@ $ ./install_docker.sh
   -  and add the following lines at the bottom of the file:
 
   ```bash
-  alias lab='docker rm -f docker_container || true; docker run --name docker_container --gpus all  --user $(id -u):$(id -g)  --workdir="/home/$USER" --volume="/etc/group:/etc/group:ro"   --volume="/etc/shadow:/etc/shadow:ro"  --volume="/etc/passwd:/etc/passwd:ro" --device=/dev/dri:/dev/dri  -e "QT_X11_NO_MITSHM=1" --network=host --hostname=docker -it  --volume "/tmp/.X11-unix:/tmp/.X11-unix:rw" --volume $HOME/trento_lab_home:$HOME --env=HOME --env=USER  --privileged  -e SHELL --env="DISPLAY=$DISPLAY" --shm-size 2g --rm  --entrypoint /bin/bash mfocchi/trento_lab_framework:introrob_upgrade'
+  alias lab_planning='xhost +local:root; docker rm -f docker_container || true; \
+  docker run --name docker_container --gpus all \
+  --workdir="/root" \
+  --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  --device=/dev/dri:/dev/dri \
+  --network=host --hostname=docker -it \
+  --env="DISPLAY=$DISPLAY" \
+  --env="QT_X11_NO_MITSHM=1" \
+  --privileged --shm-size 2g --rm \
+  --volume $HOME/trento_lab_home:/root \
+  mfocchi/trento_lab_framework:loco_nav'
   alias dock-other='docker exec -it docker_container /bin/bash'
-  alias dock-root='docker exec -it --user root docker_container /bin/bash'
   ```
 
-  where "/home/USER/PATH" is the folder you cloned the lab-docker repository. Make sure to edit the `LAB_DOCKER_PATH` variable with the path to where you cloned the `lab_docker` repository.
+
 
   **NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **-nv** flag in the **lab** alias.
 
   - Open a terminal and run the "lab" alias:
 
   ```
-  $ lab
+  $ lab_planning
   ```
 
   - You should see your terminal change from `user@hostname` to `user@docker`. 
-
   - the **lab** script will mount the folder `~/trento_lab_home` on your **host** computer. Inside of all of the docker images this folder is mapped to `$HOME`.This means that any files you place   in your docker $HOME folder will survive the stop/starting of a new docker container. All other files and installed programs will disappear on the next run. 
-  - Copy your Matlab licence in the `~/trento_lab_home/matlab` folder
   - The alias **lab** needs to be called only ONCE and opens the image. To link other terminals to the same image you should run **dock-other**, this second command will "**attach**" to the image opened previously by calling the **lab** alias.  You can call **lab** only once and **dock-other** as many times you need to open multiple terminals.
 
   **NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **--gpus all ** flag in the **lab** alias. 
 
-  - Now you need to edit the .bashrc script (that was created by the install script) **inside** the docker
+  - Now you can compile the ROS workspace in the $HOME directory **inside** docker:
 
-    ```
-    $ gedit ~/.bashrc
-    ```
-
-    and add the following lines at the bottom of the file (check LIMO_IP):
-
-    ```bash
-    source /opt/ros/noetic/setup.bash
-    source $HOME/ros_ws/install/setup.bash
-    export PATH=/opt/openrobots/bin:$PATH
-    export LOCONAV_DIR=$HOME/ros_ws/src/loco_nav
-    export PYTHONPATH=/opt/openrobots/lib/python3.8/site-packages:$LOCONAV_DIR/loco_planning/scripts:$PYTHONPATH
-    export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/opt/openrobots/share/
-    alias real_robot='export ROS_IP=$LIMO_IP'
-    alias sim='unset ROS_IP'
-    ```
-
-  - Now you can setup the workspace in the $HOME directory **inside** docker:
 
   ```
-  $ source /opt/ros/noetic/setup.bash
-  $ mkdir -p ~/ros_ws/src
-  $ cd ~/ros_ws/src
-  $ git clone https://github.com/mfocchi/loco_nav.git 
   $ cd  ~/ros_ws/
   $ catkin_make install
-  $ source .bashrc
   ```
 
 

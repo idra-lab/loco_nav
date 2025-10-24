@@ -2,8 +2,8 @@ FROM osrf/ros:noetic-desktop-focal
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-ENV DEBIAN_FRONTEND=noninteractive 
- 
+ENV DISABLE_ROS1_EOL_WARNINGS=1
+
 # Setup timezone
 RUN apt-get update && apt-get install -y tzdata && \ 
 ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && dpkg-reconfigure -f noninteractive tzdata 
@@ -107,9 +107,11 @@ PY
 RUN echo '#!/bin/bash' >> /etc/bash.bashrc && \
     echo 'source /opt/ros/noetic/setup.bash' >> /etc/bash.bashrc && \
     echo '[ -f /root/ros_ws/devel/setup.bash ] && source /root/ros_ws/install/setup.bash' >> /etc/bash.bashrc && \
-    echo 'export LOCONAV_DIR=/root/ros_ws/src/loco_nav' >> /etc/bash.bashrc   && \
+    echo 'export LOCONAV_DIR=/root/ros_ws/src/loco_nav' >> /etc/bash.bashrc && \
     echo 'export PYTHONPATH=$PYTHONPATH:$LOCONAV_DIR/loco_planning/scripts' >> /etc/bash.bashrc && \
-    echo 'alias pycharm='/root/pycharm/bin/pycharm.sh''  >> /etc/bash.bashrc 
+    echo 'alias real_robot='\''export ROS_IP=$LIMO_IP'\''' >> /etc/bash.bashrc && \
+    echo 'alias sim='\''unset ROS_IP'\''' >> /etc/bash.bashrc && \
+    echo 'alias pycharm='\''/root/pycharm/bin/pycharm.sh'\''' >> /etc/bash.bashrc
 RUN chmod +x /etc/bash.bashrc
 
 # your container now always runs Bash as a login shell, /etc/bash.bashrc will be sourced automatically.

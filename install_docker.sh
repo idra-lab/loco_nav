@@ -53,14 +53,7 @@ if [ -d "${HOME}/trento_lab_home" ]; then
   echo "Directory trento_lab_home exists."
 else
     echo "Creating trento_lab_home dir."
-    mkdir -p ${HOME}/trento_lab_home
-fi
-
-if [ -f "${HOME}/trento_lab_home/.bashrc" ]; then
-    echo ".bashrc inside trento_lab_home exists."
-else 
-echo "Copying .bashrc"
-    cp .bashrc ${HOME}/trento_lab_home/.bashrc 
+    mkdir -p ${HOME}/trento_lab_home/ros_ws/src
 fi
 
 echo "Copying .ssh folder with user permissions"
