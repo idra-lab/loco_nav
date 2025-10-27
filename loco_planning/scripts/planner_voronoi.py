@@ -45,12 +45,12 @@ class VoronoiPlanner(PlannerBase):
 
 # ---------- Main ----------
 if __name__ == "__main__":
-    planner = VoronoiPlanner(robot_radius=0.2, v_max=0.1, curvature_max=4.0, robot_name="limo0", debug=False)
-    planner.ros_init()
+    planner = VoronoiPlanner(robot_radius=0.2, v_max=0.3, curvature_max=10., robot_name="limo0", debug=False)
+    planner.ros_init(start_simulation=True, launch_file="labyrinth.launch")
 
-    #to test launch: roslaunch loco_planning labyrinth.launch start_controller:=true
+    #to test launch if start_simulation=False: roslaunch loco_planning labyrinth.launch start_controller:=true
     # this will publish everything as obstacles discretized (i.e. no map_borders)
-    planner.goal = np.array([5., 0.])
+    planner.goal = np.array([5., 0., 0.])
 
     while not rospy.is_shutdown():
         # be sure you have received all messages
