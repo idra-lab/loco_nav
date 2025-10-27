@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt # plotting
 import numpy as np             # numerical helpers (used here for deg->rad conversion)
 import sys
 show_animation = True          # toggle for live visualization
-
+from math import sqrt, atan2, cos, sin
+import time
 
 class RRT:
     """
@@ -110,7 +111,7 @@ class RRT:
                                       self.node_list[-1].y) <= self.expand_dis:
                 final_node = self.steer(self.node_list[-1], self.end, self.expand_dis)  # try to connect
                 if self.check_collision(final_node, self.obstacle_list, self.robot_radius):
-                    return self.generate_final_course(len(self.node_list) - 1)  # reconstruct path
+                    return self.generate_final_path(len(self.node_list) - 1)  # reconstruct path
 
             # draw on the other iterations (i % 5 != 0) as well
             if animation and i % 5:
@@ -151,7 +152,7 @@ class RRT:
 
         return new_node
 
-    def generate_final_course(self, goal_ind):
+    def generate_final_path(self, goal_ind):
         """
         Backtrack from node_list[goal_ind] to start via parent links to produce a path.
         """
@@ -224,8 +225,7 @@ class RRT:
         plt.grid(True)
         plt.pause(0.01)                                   # brief pause to render
 
-    @staticmethod
-    def plot_circle(x, y, size, color="-b"):  # pragma: no cover
+    def plot_circle(self, x, y, size, color="-b"):  # pragma: no cover
         """
         Draw a circle at (x, y) with radius 'size' using a polyline.
         """
@@ -235,8 +235,7 @@ class RRT:
         yl = [y + size * math.sin(np.deg2rad(d)) for d in deg]
         plt.plot(xl, yl, color)
 
-    @staticmethod
-    def get_nearest_node_index(node_list, rnd_node):
+    def get_nearest_node_index(self, node_list, rnd_node):
         """
         Return index of node in 'node_list' that is closest (squared distance) to 'rnd_node'.
         """
@@ -245,8 +244,7 @@ class RRT:
         minind = dlist.index(min(dlist))   # argmin
         return minind
 
-    @staticmethod
-    def check_if_outside_play_area(node, play_area):
+    def check_if_outside_play_area(self, node, play_area):
         """
         Return True if either no play_area is set, or node lies inside play_area.
         """
@@ -259,8 +257,7 @@ class RRT:
         else:
             return True   # inside - ok
 
-    @staticmethod
-    def check_collision(node, obstacleList, robot_radius):
+    def check_collision(self, node, obstacleList, robot_radius):
         """
         Discrete collision check: ensure all samples along node.path are outside
         each obstacle inflated by robot_radius.
@@ -278,8 +275,7 @@ class RRT:
 
         return True  # safe
 
-    @staticmethod
-    def calc_distance_and_angle(from_node, to_node):
+    def calc_distance_and_angle(self, from_node, to_node):
         """
         Compute Euclidean distance and heading angle from 'from_node' to 'to_node'.
         """
@@ -289,39 +285,147 @@ class RRT:
         theta = math.atan2(dy, dx)
         return d, theta
 
+    @staticmethod
+    def planning_map(start, goal, map, resolution=0.5, subcell_sampling_factor = 0.25, step_size=0.4,
+                     max_iter=5000, goal_sample_rate=0.05):
+        """
+        RRT in continuous space using a discrete occupancy grid.  Returns path + path length. Simpliefied example for class
+
+        Parameters:
+            start, goal: [y, x] in meters
+            map: boolean 2D array (True = obstacle)
+            resolution: meters per grid cell
+            step_size: expansion step (meters)
+            max_iter: max number of iterations
+            goal_sample_rate: probability to directly sample the goal
+
+        Returns:
+            path: list of (y, x) nodes in meters
+            path_length: total length of the path (meters)
+        """
+
+        rows, cols = map.shape
+        width = cols * resolution
+        height = rows * resolution
+
+        # Plot background (same look as Dijkstra)
+        plt.imshow(map, cmap='gray_r', origin='upper', extent=[0, width, height, 0])
+        plt.plot(start[1], start[0], 'or', markersize=10)   # red start
+        plt.plot(goal[1], goal[0], 'oy',markersize=10)     # yellow goal
+        plt.ion()
+
+        nodes = [tuple(start)]
+        parent = {tuple(start): None}
+
+        def distance(p1, p2):
+            return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+        def sample():
+            if random.random() < goal_sample_rate:
+                return tuple(goal)
+            return (random.uniform(0, height), random.uniform(0, width))
+
+        #get nearest point in the graph to q_rand
+        def nearest(q_rand):
+            #you can alternatively use KDTREES
+            q_nearest =  min(nodes, key=lambda n: distance(n, q_rand))
+            return q_nearest
+
+        # expand from q_nearest to q_rand
+        def extend(q_nearest, q_rand):
+            theta = atan2(q_rand[0] - q_nearest[0], q_rand[1] - q_nearest[1])
+            # compute q_new node
+            q_new = (q_nearest[0] + step_size * sin(theta), q_nearest[1] + step_size * cos(theta))
+            #clamps both coordinates to the valid range [0, height] × [0, width] of the map
+            q_new = (max(0, min(q_new[0], height)), max(0, min(q_new[1], width)))
+            return q_new
+
+        def is_collision_free(q_nearest, q_new):
+            """Check if the line between q_nearest and q_new crosses an obstacle."""
+            d = distance(q_nearest, q_new)
+            # get the number of subsample for collision checking on the edge between q_nearest and q_rand
+            n = int(distance(q_nearest, q_new) / (resolution * subcell_sampling_factor))
+            if n == 0:  # the point is inside the resolution so check the point right away
+                ry, cx = int(q_new[1] / resolution), int(q_new[0] / resolution)
+                if ry < 0 or cx < 0 or ry >= rows or cx >= cols:
+                    return False
+                if map[ry, cx]:
+                    return False
+            else:
+                for i in range(n + 1):
+                    y = q_nearest[0] + (q_new[0] - q_nearest[0]) * i / n
+                    x = q_nearest[1] + (q_new[1] - q_nearest[1]) * i / n
+                    ry, cx = int(y / resolution), int(x / resolution)
+                    if ry < 0 or cx < 0 or ry >= rows or cx >= cols:
+                        return False
+                    if map[ry, cx]:
+                        return False
+            return True
+
+        # --- Main RRT loop ---
+        for i in range(max_iter):
+            q_rand = sample()
+            q_nearest = nearest(q_rand)
+            q_new = extend(q_nearest, q_rand)
+            # if there is a collision continue sampling a new node
+            if not is_collision_free(q_nearest, q_new):
+                continue
+            #if there is no collision append q_new to the graph
+            nodes.append(q_new)
+            # set the parent node of q_new as the nearest
+            parent[q_new] = q_nearest
+
+            # Draw green edge (connection)
+            plt.plot([q_nearest[1], q_new[1]],
+                     [q_nearest[0], q_new[0]],
+                     color='g', linewidth=1.5, alpha=0.7)
+            plt.plot(q_new[1], q_new[0], 'g*', markersize=5)
+            plt.pause(0.0001)
+
+            if distance(q_new, goal) < step_size * 2:
+                parent[tuple(goal)] = q_new
+                print(f"Goal reached at iteration {i}")
+                break
+
+        # --- Reconstruct final path starting from goal back to start---
+        path = []
+        node = tuple(goal)
+        while node is not None:
+            path.append(node)
+            #Try to get the parent of node from the dictionary parent. If the key node does not exist, returns None
+            node = parent.get(node, None)
+        #get the path reverse (from start to goal)
+        path.reverse()
+
+        # --- Compute total path length from goal to start---
+        path_length = 0.0
+        for p1, p2 in zip(path[:-1], path[1:]):
+            path_length += distance(p1, p2)
+
+        # --- Draw final path (red) ---
+        #plot the edges
+        for p1, p2 in zip(path[:-1], path[1:]):
+            plt.plot([p1[1], p2[1]], [p1[0], p2[0]], 'r-', linewidth=3.0)
+        #plot the nodes
+        for p in path:
+            plt.plot(p[1], p[0], 'r.', markersize=4)
+        plt.ioff()
+        plt.show()
+        return path, path_length
+
+
 if __name__ == '__main__':
-
-    # Goal
-    gx=6.0
-    gy=10.0
-    print("start " + __file__)  # show which file is running (useful when imported)
-
-    # ====Search Path with RRT====
-    # obstacles are all cylindric with centerx, centery, radius tuples
-    obstacleList = [(5, 5, 1), (3, 6, 2), (3, 8, 2), (3, 10, 2), (7, 5, 2),
-                    (9, 5, 2), (8, 10, 1)]  # [x, y, radius] circular obstacles
-    # Set Initial parameters
-    rrt = RRT(
-        start=[0, 0],                 # starting coordinate
-        goal=[gx, gy],                # goal coordinate (passed as args)
-        rand_area=[-2, 15],           # uniform sampling square in both axes
-        obstacle_list=obstacleList,   # obstacles
-        # play_area=[0, 10, 0, 14]    # uncomment to constrain to a rectangle
-        robot_radius=0.8              # robot radius for obstacle inflation
-        )
-    path = rrt.planning(animation=show_animation)  # run planner
-
-    if path is None:
-        print("Cannot find path")
+    start=[1., 1.]
+    goal=[9., 9.]
+    np.random.seed(0)
+    map_width = 10.
+    map_height = 10.
+    resolution = 0.5  # 0.5 m per cell → 10x10 m world
+    map = np.random.rand(int(map_width/resolution), int(map_height/resolution)) < 0.1  # when the value is lower than 0.1 is True and is an obstacle, otherwise is zero (free space)
+    t0 = time.time()
+    path, path_length = RRT.planning_map(start=start, goal=goal, map=map, resolution=resolution, subcell_sampling_factor=0.25)
+    t1 = time.time()
+    if path is not None:
+        print(f"Path found! of length {path_length}, runtime={t1 - t0:.6f} sec")
     else:
-        print("found path!!")
-
-        # Draw final path
-        if show_animation:
-            rrt.draw_graph()                                  # draw last tree state
-            plt.plot([x for (x, y) in path],                  # plot path x's
-                     [y for (x, y) in path], '-r')            # plot path y's (red polyline)
-            plt.grid(True)
-            plt.pause(0.01)  # Need for Mac (ensures render)
-            plt.show()       # keep the plot window open
-
+        print("Cannot find path, number of iteration exceeded")

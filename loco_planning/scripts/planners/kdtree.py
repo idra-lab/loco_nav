@@ -250,7 +250,6 @@ if __name__ == "__main__":
     plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
 
-    # compare with library implementation
     # compare with SCIPY library implementation
     tree_sci = sciKDTree(points)
     dist, idx = tree_sci.query(query)

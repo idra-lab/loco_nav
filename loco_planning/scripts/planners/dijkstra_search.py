@@ -387,9 +387,9 @@ class DijkstraSearch:
         start: start coordinates [m]
         goal: goal coordinates [m]
         """
-        plt.imshow(map)  # shows the map
-        plt.plot(start[1], start[0], 'or')  # puts a red asterisk at the start
-        plt.plot(goal[1], goal[0], 'oy')  # puts a yellow asterisk at the goal
+        plt.imshow(map,  cmap='gray_r')  # shows the map
+        plt.plot(start[1], start[0], 'or',markersize=10)  # puts a red asterisk at the start
+        plt.plot(goal[1], goal[0], 'oy',markersize=10)  # puts a yellow asterisk at the goal
         plt.ion()  # turns 'interactive mode' on
 
         # --- Step 1: initialize distances and parents ---
@@ -430,7 +430,7 @@ class DijkstraSearch:
         # --- Step 5: reconstruct path ---
         path = self.compute_path(start, goal, parent)
         for p in path:
-             plt.plot(p[1],p[0],'r.')
+             plt.plot(p[1],p[0],'r.',markersize=10)
              plt.ioff()
              plt.show()
         path_lenght = dist[goal]
@@ -440,17 +440,17 @@ if __name__ == "__main__":
     print(__file__ + " start!!")
 
     # Class Exercise
-    start = 'A'
-    goal = 'E'
-    nodes = ['A', 'B','C','D','E']
-    #since we have letter we use a disctionary for the  weighted graph
-    edge_ids_list_w = {
-        'A': [('B', 10), ('C', 3)], #(idx, weight)
-        'B' : [('C',2), ('D',2)],
-        'C' : [('E',2),  ('D',8) , ('B',4)],
-        'D' : [('E',7)],
-        'E' : [('D',9)]}
-    path = DijkstraSearch(show_animation=False, verbose=True).search_graph(start, nodes, edge_ids_list_w)
+    # start = 'A'
+    # goal = 'E'
+    # nodes = ['A', 'B','C','D','E']
+    # #since we have letter we use a disctionary for the  weighted graph
+    # edge_ids_list_w = {
+    #     'A': [('B', 10), ('C', 3)], #(idx, weight)
+    #     'B' : [('C',2), ('D',2)],
+    #     'C' : [('E',2),  ('D',8) , ('B',4)],
+    #     'D' : [('E',7)],
+    #     'E' : [('D',9)]}
+    # path = DijkstraSearch(show_animation=False, verbose=True).search_graph(start, nodes, edge_ids_list_w)
 
     # Question 1
     # start = 0
@@ -483,13 +483,13 @@ if __name__ == "__main__":
     # plt.show()
 
     #Question 3
-    # np.random.seed(0)
-    # rows = 20
-    # cols = 20
-    # map = np.random.rand(rows, cols) < 0.1  # when the value is lower than 0.1 is True and is an obstacle, otherwise is zero (free space)
-    # start = (0, 0)
-    # goal = (19, 19)
-    # t0 = time.time()
-    # number_of_expanded_nodes, path_lenght = DijkstraSearch(show_animation=False).search_map(start, goal, map)
-    # t1 = time.time()
-    # print(f"n. of exp. nodes={number_of_expanded_nodes}, path length {path_lenght}, runtime={t1 - t0:.6f} sec")
+    np.random.seed(0)
+    rows = 20
+    cols = 20
+    map = np.random.rand(rows, cols) < 0.1  # when the value is lower than 0.1 is True and is an obstacle, otherwise is zero (free space)
+    start = (0, 0)
+    goal = (19, 19)
+    t0 = time.time()
+    number_of_expanded_nodes, path_lenght = DijkstraSearch(show_animation=False).search_map(start, goal, map)
+    t1 = time.time()
+    print(f"n. of exp. nodes={number_of_expanded_nodes}, path length {path_lenght}, runtime={t1 - t0:.6f} sec")

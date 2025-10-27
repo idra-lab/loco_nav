@@ -43,9 +43,9 @@ class PlannerBase:
         self.goal_ready = False
         self.computed_path = False
 
-    def ros_init(self, start_simulation=False, regenerate_map=True):
+    def ros_init(self, start_simulation=False, regenerate_map=True, launch_file=None):
         if start_simulation:
-            self.startSimulation(regenerate_map=regenerate_map)
+            self.startSimulation(regenerate_map=regenerate_map, launch_file=launch_file)
         rospy.init_node("planner_node", anonymous=False)  # with anonymous=False ROS will handle killing any old instance automatically.
 
         # ROS interfaces
@@ -266,7 +266,7 @@ class PlannerBase:
             rospy.signal_shutdown("Finished RRT planning")
         self.computed_path = True
 
-    def startSimulation(self, regenerate_map=True):
+    def startSimulation(self, regenerate_map=True, launch_file=None):
         os.system("pkill rosmaster")
         os.system("pkill gzserver")
         os.system("pkill gzclient")
@@ -275,7 +275,10 @@ class PlannerBase:
         additional_args=["start_controller:=true"]
         if not regenerate_map:
             additional_args.append("generate_new_config:=false")
-        launchFileNode(package="loco_planning", launch_file="multiple_robots.launch", additional_args=additional_args)
+        if launch_file is None:
+            launchFileNode(package="loco_planning", launch_file="multiple_robots.launch", additional_args=additional_args)
+        else:
+            launchFileNode(package="loco_planning", launch_file=launch_file, additional_args=additional_args)
         rospy.sleep(6.)
 # ---------- Main ----------
 if __name__ == "__main__":

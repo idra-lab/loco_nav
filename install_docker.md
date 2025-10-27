@@ -83,8 +83,15 @@ $ git clone https://github.com/idra-lab/loco_nav.git
 
 
   ```
-  $ cd  ~/ros_ws/
+  $ cd  /root/ros_ws/
   $ catkin_make install
+  ```
+
+  - Only once, after the first compilation do:	
+
+
+  ```
+$ source /root/ros_ws/install/setup.bash
   ```
 
 

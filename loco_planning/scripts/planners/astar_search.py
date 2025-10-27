@@ -99,7 +99,7 @@ class AstarSearch:
         start: start coordinates [m]
         goal: goal coordinates [m]
         """
-        plt.imshow(map)  # shows the map
+        plt.imshow(map,  cmap='gray_r')  # shows the map
         plt.plot(start[1], start[0], 'or')  # puts a red asterisk at the start
         plt.plot(goal[1], goal[0], 'oy')  # puts a yellow asterisk at the goal
         plt.ion()  # turns 'interactive mode' on
