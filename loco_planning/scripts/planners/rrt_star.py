@@ -252,7 +252,7 @@ class RRTStar(RRT):
 
     @staticmethod
     def planning_map(start, goal, map, resolution=0.5, subcell_sampling_factor=0.25,
-                     step_size=0.4, max_iter=5000, goal_sample_rate=0.05, radius=1.0):
+                     step_size=0.4, max_iter=5000, goal_sample_rate=0.05, mu=1.0):
         """
         RRT* in continuous space using a discrete occupancy grid. Returns path + path length.
         Visualization similar to RRT for teaching purposes.
@@ -326,7 +326,7 @@ class RRTStar(RRT):
             return True
 
         def near(q_new):
-            return [n for n in nodes if distance(n, q_new) < radius]
+            return [n for n in nodes if distance(n, q_new) < mu]
 
         # --- Main RRT* Loop ---
         for i in range(max_iter):
@@ -339,29 +339,33 @@ class RRTStar(RRT):
 
             # --- Choose best parent to q_new---
             near_nodes = near(q_new)
+            #compute cost for connecting q_new from q_nearest
             q_min = q_nearest
             c_min = cost[q_nearest] + distance(q_nearest, q_new)
+            #Parent selection: loop through  near nodes to see if there is a lower cost parent
             for q_near in near_nodes:
                 if is_collision_free(q_near, q_new):
                     c_new = cost[q_near] + distance(q_near, q_new)
                     if c_new < c_min:
                         q_min = q_near
                         c_min = c_new
-
+            #add the node q_new to the graph setting its parent q_min
             nodes.append(q_new)
             parent[q_new] = q_min
             cost[q_new] = c_min
 
-            # --- Rewiring ---
+            # Rewiring: find if among q_near nodes there is a lower cost connection through q_new which is collision free
             for q_near in near_nodes:
                 if is_collision_free(q_new, q_near):
                     c_through_new = cost[q_new] + distance(q_new, q_near)
                     if c_through_new < cost[q_near]:
+                        # rewire setting as parent node of q_near the q_new
                         parent[q_near] = q_new
                         cost[q_near] = c_through_new
-                        plt.plot([q_near[1], q_new[1]], [q_near[0], q_new[0]], 'b--', alpha=0.4)
+                        #plot the rewired edge
+                        plt.plot([q_near[1], q_new[1]], [q_near[0], q_new[0]], 'b--', alpha=1.)
 
-            # Visualization
+            # Visualization of added node q_new with the added edge
             plt.plot([parent[q_new][1], q_new[1]],
                      [parent[q_new][0], q_new[0]], color='g', linewidth=1.3, alpha=0.7)
             plt.plot(q_new[1], q_new[0], 'g*', markersize=5)
@@ -410,6 +414,7 @@ if __name__ == '__main__':
     map_width = 10.
     map_height = 10.
     resolution = 0.5
+
     map = np.random.rand(int(map_height / resolution), int(map_width / resolution)) < 0.1
 
     t0 = time.time()
