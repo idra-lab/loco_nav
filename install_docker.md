@@ -11,12 +11,8 @@ Installation with Docker
 $ ./install_docker.sh
 ```
 - If everything went smooth you should read: **To start docker, reboot the system!** You can now restart the PC so that all changes made can be applied.
-
 - If you look into your **host** Ubuntu home directory, you will see that the **trento_lab_home** directory has been created with **/ros_ws/src** subfolders.
-
 - now you can clone the loco_nav code inside the  **trento_lab_home/ros_ws/src** folder
-
-- 
 
 
 ```
@@ -24,20 +20,20 @@ $ cd ~/trento_lab_home/ros_ws/src
 $ git clone https://github.com/idra-lab/loco_nav.git
 ```
 
-- how you have two options: 
+- Now you have two options: 
 
-  - A) Download the docker image from here:	
+  A) Download the docker image from here:	
 
-    ```
-    docker pull mfocchi/trento_lab_framework:loco_nav
-    ```
+  ```
+  docker pull mfocchi/trento_lab_framework:loco_nav
+  ```
 
-  - B) compile the docker image yourself:
+  B) compile the docker image yourself:
 
-    ```
-    cd ~/trento_lab_home/ros_ws/src/loco_nav/docker/loco_nav
-    docker build -t mfocchi/trento_lab_framework:loco_nav -f Dockerfile .
-    ```
+  ```
+  cd ~/trento_lab_home/ros_ws/src/loco_nav/docker/loco_nav
+  docker build -t mfocchi/trento_lab_framework:loco_nav -f Dockerfile .
+  ```
 
 - Now, you need to configure the bash environment of your Ubuntu machine as follows. Open the `bashrc` file from your home folder:
 
@@ -46,7 +42,7 @@ $ git clone https://github.com/idra-lab/loco_nav.git
   $ gedit ~/.bashrc
   ```
 
-  -  and add the following lines at the bottom of the file:
+- and add the following lines at the bottom of the file:
 
   ```bash
   alias lab_planning='xhost +local:root; docker rm -f docker_container || true; \
@@ -67,33 +63,31 @@ $ git clone https://github.com/idra-lab/loco_nav.git
 
   **NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **-nv** flag in the **lab** alias.
 
-  - Open a terminal and run the "lab" alias:
+- Open a terminal and run the "lab" alias:
 
-  ```
-  $ lab_planning
-  ```
+```
+$ lab_planning
+```
 
-  - You should see your terminal change from `user@hostname` to `user@docker`. 
-  - the **lab** script will mount the folder `~/trento_lab_home` on your **host** computer. Inside of all of the docker images this folder is mapped to `$HOME`.This means that any files you place   in your docker $HOME folder will survive the stop/starting of a new docker container. All other files and installed programs will disappear on the next run. 
-  - The alias **lab** needs to be called only ONCE and opens the image. To link other terminals to the same image you should run **dock-other**, this second command will "**attach**" to the image opened previously by calling the **lab** alias.  You can call **lab** only once and **dock-other** as many times you need to open multiple terminals.
+- You should see your terminal change from `user@hostname` to `user@docker`. 
+- the **lab** script will mount the folder `~/trento_lab_home` on your **host** computer. Inside of all of the docker images this folder is mapped to `$HOME`.This means that any files you place   in your docker $HOME folder will survive the stop/starting of a new docker container. All other files and installed programs will disappear on the next run. 
+- The alias **lab** needs to be called only ONCE and opens the image. To link other terminals to the same image you should run **dock-other**, this second command will "**attach**" to the image opened previously by calling the **lab** alias.  You can call **lab** only once and **dock-other** as many times you need to open multiple terminals.
 
-  **NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **--gpus all ** flag in the **lab** alias. 
+**NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **--gpus all ** flag in the **lab** alias. 
 
-  - Now you can compile the ROS workspace in the $HOME directory **inside** docker:
-
-
-  ```
-  $ cd  /root/ros_ws/
-  $ catkin_make install
-  ```
-
-  - Only once, after the first compilation do:	
+- Now you can compile the ROS workspace in the $HOME directory **inside** docker:
 
 
-  ```
+```
+$ cd  /root/ros_ws/
+$ catkin_make install
+```
+
+- Only once, after the first compilation do:	
+
+```
 $ source /root/ros_ws/install/setup.bash
-  ```
-
+```
 
 
 Installing NVIDIA drivers (optional)
