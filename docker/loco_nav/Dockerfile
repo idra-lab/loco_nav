@@ -106,7 +106,7 @@ PY
 # Source ROS automatically  use single quote to have it literal and avoid expansion of empty $PYTHONPATH
 RUN echo '#!/bin/bash' >> /etc/bash.bashrc && \
     echo 'source /opt/ros/noetic/setup.bash' >> /etc/bash.bashrc && \
-    echo '[ -f /root/ros_ws/devel/setup.bash ] && source /root/ros_ws/install/setup.bash' >> /etc/bash.bashrc && \
+    echo '[ -f /root/ros_ws/install/setup.bash ] && source /root/ros_ws/install/setup.bash' >> /etc/bash.bashrc && \
     echo 'export LOCONAV_DIR=/root/ros_ws/src/loco_nav' >> /etc/bash.bashrc && \
     echo 'export PYTHONPATH=$PYTHONPATH:$LOCONAV_DIR/loco_planning/scripts' >> /etc/bash.bashrc && \
     echo 'alias real_robot='\''export ROS_IP=$LIMO_IP'\''' >> /etc/bash.bashrc && \
