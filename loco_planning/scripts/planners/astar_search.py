@@ -12,7 +12,8 @@ import math
 from collections import defaultdict
 from heapq import heappush, heappop
 from utils.utils import get8NeighborsCost
-
+import numpy as np
+import time
 
 class AstarSearch:
 
@@ -99,9 +100,9 @@ class AstarSearch:
         start: start coordinates [m]
         goal: goal coordinates [m]
         """
-        plt.imshow(map,  cmap='gray_r')  # shows the map
-        plt.plot(start[1], start[0], 'or')  # puts a red asterisk at the start
-        plt.plot(goal[1], goal[0], 'oy')  # puts a yellow asterisk at the goal
+        plt.imshow(map,  cmap='gray_r', origin='lower')  # shows the map
+        plt.plot(start[0],start[1], 'or')  # puts a red asterisk at the start
+        plt.plot(goal[0], goal[1], 'oy')  # puts a yellow asterisk at the goal
         plt.ion()  # turns 'interactive mode' on
 
         # --- Step 1: initialize distances and parents ---
@@ -129,14 +130,14 @@ class AstarSearch:
                 #print("parent", parent)
                 f = []
                 for p in path:
-                    plt.plot(p[1], p[0], 'r.')
+                    plt.plot( p[0],p[1], 'r.')
                     plt.ioff()
                     plt.show()
                     f.append(g[p] + h(p, goal))
                 path_lenght = g[goal]
                 return   number_of_expanded_nodes, path_lenght, f
 
-            plt.plot(n[1], n[0], 'g*')
+            plt.plot(n[0],n[1],  'g*')
             plt.show()
             plt.pause(0.000001)
 
@@ -213,16 +214,16 @@ if __name__ == "__main__":
     # print(f"shortest path to {goal} is: {min_path} with cost {min_cost}")
 
     # question 3 map
-    # np.random.seed(0)
-    # rows = 20
-    # cols = 20
-    # map = np.random.rand(rows, cols) < 0.1  # when the value is lower than 0.1 is True and is an obstacle, otherwise is zero (free space)
-    # start = (0, 0)
-    # goal = (19, 19)
-    # t0 = time.time()
-    # number_of_expanded_nodes, path_lenght, f = AstarSearch().search_map(start, goal, map, euclidean)
-    # t1 = time.time()
-    # print(f"n. of exp. nodes={number_of_expanded_nodes}, path length {path_lenght}, runtime={t1 - t0:.6f} sec")
+    np.random.seed(0)
+    rows = 20
+    cols = 20
+    map = np.random.rand(rows, cols) < 0.1  # when the value is lower than 0.1 is True and is an obstacle, otherwise is zero (free space)
+    start = (0, 0)
+    goal = (5, 19)
+    t0 = time.time()
+    number_of_expanded_nodes, path_lenght, f = AstarSearch().search_map(start, goal, map, euclidean)
+    t1 = time.time()
+    print(f"n. of exp. nodes={number_of_expanded_nodes}, path length {path_lenght}, runtime={t1 - t0:.6f} sec")
 
     #question 4: prove heuristic is admissible (never overestimates) and consistent (monotone) -> f(n) non decreasing
     # plt.figure()

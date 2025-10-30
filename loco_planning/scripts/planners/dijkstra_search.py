@@ -165,7 +165,7 @@ class DijkstraSearch:
             #u = min(Q, key=lambda x: dist[x])
             u = self.mindistance(Q, dist)
             plt.plot(node_x[u], node_y[u], 'b.')
-            # ✅ draw immediately even if non-blocking
+            # draw immediately even if non-blocking
             plt.draw()
             plt.pause(0.001)
             plt.show(block=False)
@@ -387,9 +387,9 @@ class DijkstraSearch:
         start: start coordinates [m]
         goal: goal coordinates [m]
         """
-        plt.imshow(map,  cmap='gray_r')  # shows the map
-        plt.plot(start[1], start[0], 'or',markersize=10)  # puts a red asterisk at the start
-        plt.plot(goal[1], goal[0], 'oy',markersize=10)  # puts a yellow asterisk at the goal
+        plt.imshow(map,  cmap='gray_r', origin='lower')  # shows the map
+        plt.plot(start[0], start[1], 'or',markersize=10)  # puts a red asterisk at the start
+        plt.plot(goal[0], goal[1],  'oy',markersize=10)  # puts a yellow asterisk at the goal
         plt.ion()  # turns 'interactive mode' on
 
         # --- Step 1: initialize distances and parents ---
@@ -411,7 +411,7 @@ class DijkstraSearch:
             visited.add(u)  # mark as visited
             number_of_expanded_nodes+=1
 
-            plt.plot(u[1], u[0], 'g*')
+            plt.plot(u[0],u[1], 'g*')
             plt.show()
             plt.pause(0.000001)
             if u == goal:
@@ -430,7 +430,7 @@ class DijkstraSearch:
         # --- Step 5: reconstruct path ---
         path = self.compute_path(start, goal, parent)
         for p in path:
-             plt.plot(p[1],p[0],'r.',markersize=10)
+             plt.plot(p[0], p[1],'r.',markersize=10)
              plt.ioff()
              plt.show()
         path_lenght = dist[goal]
@@ -453,10 +453,10 @@ if __name__ == "__main__":
     # path = DijkstraSearch(show_animation=False, verbose=True).search_graph(start, nodes, edge_ids_list_w)
 
     # Question 1
-    # start = 0
+    # start = 1
     # goal = 77
     # # create random sparse graph  with 100 nodes
-    # nodes, edge_ids_list_w = DijkstraSearch(show_animation=False).random_sparse_graph(num_nodes=100, max_edges_per_node=10, max_weight=10)
+    # nodes, edge_ids_list_w = DijkstraSearch(show_animation=False, verbose=True).random_sparse_graph(num_nodes=100, max_edges_per_node=10, max_weight=10)
     # path = DijkstraSearch(show_animation=False).search_graph(start, nodes, edge_ids_list_w, goal)
 
 
@@ -488,7 +488,7 @@ if __name__ == "__main__":
     cols = 20
     map = np.random.rand(rows, cols) < 0.1  # when the value is lower than 0.1 is True and is an obstacle, otherwise is zero (free space)
     start = (0, 0)
-    goal = (19, 19)
+    goal = (5, 19)
     t0 = time.time()
     number_of_expanded_nodes, path_lenght = DijkstraSearch(show_animation=False).search_map(start, goal, map)
     t1 = time.time()

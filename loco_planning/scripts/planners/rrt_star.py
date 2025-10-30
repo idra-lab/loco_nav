@@ -274,9 +274,9 @@ class RRTStar(RRT):
         width = cols * resolution
         height = rows * resolution
 
-        plt.imshow(map, cmap='gray_r', origin='upper', extent=[0, width, height, 0])
-        plt.plot(start[1], start[0], 'or', markersize=10)
-        plt.plot(goal[1], goal[0], 'oy', markersize=10)
+        plt.imshow(map, cmap='gray_r', origin='lower', extent=[0, width, 0, height])
+        plt.plot(start[0],start[1],  'or', markersize=10)
+        plt.plot(goal[0], goal[1],  'oy', markersize=10)
         plt.ion()
 
         nodes = [tuple(start)]
@@ -305,7 +305,6 @@ class RRTStar(RRT):
 
         def is_collision_free(q_nearest, q_new):
             """Check if the line between q_nearest and q_new crosses an obstacle."""
-            d = distance(q_nearest, q_new)
             # get the number of subsample for collision checking on the edge between q_nearest and q_rand
             n = int(distance(q_nearest, q_new) / (resolution * subcell_sampling_factor))
             if n == 0:  # the point is inside the ball of radius of the resolution so check the point right away
@@ -318,8 +317,8 @@ class RRTStar(RRT):
                     return False
             else:
                 for i in range(n + 1):
-                    y = q_nearest[0] + (q_new[0] - q_nearest[0]) * i / n
-                    x = q_nearest[1] + (q_new[1] - q_nearest[1]) * i / n
+                    y = q_nearest[1] + (q_new[1] - q_nearest[1]) * i / n
+                    x = q_nearest[0] + (q_new[0] - q_nearest[0]) * i / n
                     ry, cx = int(y / resolution), int(x / resolution)
                     # discard points outside the map
                     if ry < 0 or cx < 0 or ry >= rows or cx >= cols:
@@ -367,12 +366,11 @@ class RRTStar(RRT):
                         parent[q_near] = q_new
                         cost[q_near] = c_through_new
                         #plot the rewired edge
-                        plt.plot([q_near[1], q_new[1]], [q_near[0], q_new[0]], 'b--', alpha=1.)
+                        plt.plot( [q_near[0], q_new[0]], [q_near[1], q_new[1]],'b--', alpha=1.)
 
             # Visualization of added node q_new with the added edge
-            plt.plot([parent[q_new][1], q_new[1]],
-                     [parent[q_new][0], q_new[0]], color='g', linewidth=1.3, alpha=0.7)
-            plt.plot(q_new[1], q_new[0], 'g*', markersize=5)
+            plt.plot([parent[q_new][0], q_new[0]], [parent[q_new][1], q_new[1]],color='g', linewidth=1.3, alpha=0.7)
+            plt.plot( q_new[0], q_new[1],'g*', markersize=5)
             plt.pause(0.0001)
 
             # Check for goal
@@ -401,9 +399,9 @@ class RRTStar(RRT):
 
         # --- Final path visualization ---
         for p1, p2 in zip(path[:-1], path[1:]):
-            plt.plot([p1[1], p2[1]], [p1[0], p2[0]], 'r-', linewidth=3.0)
+            plt.plot([p1[0], p2[0]],[p1[1], p2[1]],  'r-', linewidth=3.0)
         for p in path:
-            plt.plot(p[1], p[0], 'r.', markersize=4)
+            plt.plot(p[0], p[1],  'r.', markersize=4)
 
         plt.ioff()
         plt.show()

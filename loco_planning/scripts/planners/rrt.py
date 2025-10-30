@@ -309,9 +309,9 @@ class RRT:
         height = rows * resolution
 
         # Plot background (same look as Dijkstra)
-        plt.imshow(map, cmap='gray_r', origin='upper', extent=[0, width, height, 0])
-        plt.plot(start[1], start[0], 'or', markersize=10)   # red start
-        plt.plot(goal[1], goal[0], 'oy',markersize=10)     # yellow goal
+        plt.imshow(map, cmap='gray_r', origin='lower', extent=[0, width, 0,height])
+        plt.plot(start[0],start[1],  'or', markersize=10)   # red start
+        plt.plot(goal[0],goal[1],  'oy',markersize=10)     # yellow goal
         plt.ion()
 
         nodes = [tuple(start)]
@@ -355,8 +355,8 @@ class RRT:
                     return False
             else:
                 for i in range(n + 1):
-                    y = q_nearest[0] + (q_new[0] - q_nearest[0]) * i / n
-                    x = q_nearest[1] + (q_new[1] - q_nearest[1]) * i / n
+                    y = q_nearest[1] + (q_new[1] - q_nearest[1]) * i / n
+                    x = q_nearest[0] + (q_new[0] - q_nearest[0]) * i / n
                     ry, cx = int(y / resolution), int(x / resolution)
                     # discard points outside the map
                     if ry < 0 or cx < 0 or ry >= rows or cx >= cols:
@@ -380,10 +380,8 @@ class RRT:
             parent[q_new] = q_nearest
 
             # Draw green edge (connection)
-            plt.plot([q_nearest[1], q_new[1]],
-                     [q_nearest[0], q_new[0]],
-                     color='g', linewidth=1.5, alpha=0.7)
-            plt.plot(q_new[1], q_new[0], 'g*', markersize=5)
+            plt.plot([q_nearest[0], q_new[0]],[q_nearest[1], q_new[1]],  color='g', linewidth=1.5, alpha=0.7)
+            plt.plot(q_new[0], q_new[1],  'g*', markersize=5)
             plt.pause(0.0001)
 
             if distance(q_new, goal) < step_size * 2:
@@ -409,10 +407,10 @@ class RRT:
         # --- Draw final path (red) ---
         #plot the edges
         for p1, p2 in zip(path[:-1], path[1:]):
-            plt.plot([p1[1], p2[1]], [p1[0], p2[0]], 'r-', linewidth=3.0)
+            plt.plot( [p1[0], p2[0]],[p1[1], p2[1]], 'r-', linewidth=3.0)
         #plot the nodes
         for p in path:
-            plt.plot(p[1], p[0], 'r.', markersize=4)
+            plt.plot(p[0], p[1],  'r.', markersize=4)
         plt.ioff()
         plt.show()
         return path, path_length

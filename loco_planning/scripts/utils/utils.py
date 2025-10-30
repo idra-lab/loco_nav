@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 class Utils:
 
@@ -26,21 +27,22 @@ class Utils:
 #             neighbors.append(cand)
 #     return neighbors
 
+# X coordinates of input is on map/cols, while y coordinate is on map/rows
 def get8Neighbors(u, map, th=0.3):
     neighbors=[]
     for delta in ((0,1), (0,-1), (1,0), (-1,0), (1,1), (-1,-1), (1,-1), (-1,1)):
         cand = (u[0]+delta[0] , u[1]+delta[1])
-        if (cand[0]>=0 and cand[0]<len(map) and cand[1]>=0 and cand[1]<len(map[0]) and map[cand[0]][cand[1]] <th): #if is not out of map and is not occupied give me the neighbor
+        if (cand[0]>=0 and cand[0]<len(map[1]) and cand[1]>=0 and cand[1]<len(map[0]) and map[cand[1]][cand[0]] <th): #if is not out of map and is not occupied by obstacle (1) give me the neighbor
             neighbors.append(cand)
     return neighbors
 
+# X coordinates of input is on map/cols, while y coordinate is on map/rows
 def get8NeighborsCost(input, map, th=0.3):
     neighbors=[]
     for delta in ((0,1), (0,-1), (1,0), (-1,0), (1,1), (-1,-1), (1,-1), (-1,1)):
         cand = (input[0]+delta[0] , input[1]+delta[1])
         cost = np.sqrt(delta[0]**2+delta[1]**2)
-        if (cand[0]>=0 and cand[0]<len(map) and cand[1]>=0 and cand[1]<len(map[0]) and map[cand[0]][cand[1]] <th): #if is not out of map and is not occupied give me the neighbor
-
+        if (cand[0]>=0 and cand[0]<len(map[1]) and cand[1]>=0 and cand[1]<len(map[0]) and map[cand[1]][cand[0]] <th): #if is not out of map and is not occupied by obstacle (1) give me the neighbor
             neighbors.append((cand, cost))
     return neighbors
 
