@@ -306,12 +306,14 @@ class RRTStar(RRT):
         def is_collision_free(q_nearest, q_new):
             """Check if the line between q_nearest and q_new crosses an obstacle."""
             d = distance(q_nearest, q_new)
-            #get the number of subsample for collision checking on the edge between q_nearest and q_rand
+            # get the number of subsample for collision checking on the edge between q_nearest and q_rand
             n = int(distance(q_nearest, q_new) / (resolution * subcell_sampling_factor))
-            if n == 0: #the point is inside the resolution so check the point right away
+            if n == 0:  # the point is inside the ball of radius of the resolution so check the point right away
                 ry, cx = int(q_new[1] / resolution), int(q_new[0] / resolution)
+                # discard points outside the map
                 if ry < 0 or cx < 0 or ry >= rows or cx >= cols:
                     return False
+                # discard points on obstacles (positive map)
                 if map[ry, cx]:
                     return False
             else:
@@ -319,8 +321,10 @@ class RRTStar(RRT):
                     y = q_nearest[0] + (q_new[0] - q_nearest[0]) * i / n
                     x = q_nearest[1] + (q_new[1] - q_nearest[1]) * i / n
                     ry, cx = int(y / resolution), int(x / resolution)
+                    # discard points outside the map
                     if ry < 0 or cx < 0 or ry >= rows or cx >= cols:
                         return False
+                    # discard points on obstacles (positive map)
                     if map[ry, cx]:
                         return False
             return True
