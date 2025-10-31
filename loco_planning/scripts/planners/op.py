@@ -41,7 +41,7 @@ def dijkstra(source, V, E):
                 heapq.heappush(pq, (nd, v))
     return dist, parent
 
-def solve_orienteering_brute_force(V, E, victims, scores, start, L):
+def solve_orienteering_brute_force(V, E, victims, scores, start, end, L):
     """
     Solve a small Orienteering Problem on a given roadmap.
 
@@ -69,7 +69,7 @@ def solve_orienteering_brute_force(V, E, victims, scores, start, L):
     """
 
     # Precompute shortest-path distances between  between all key nodes
-    key_nodes = [start] + victims
+    key_nodes = [start] + victims + [end]
     sp_dist = {n:  dijkstra(n, V, E)[0]  for n in key_nodes} #[0] is the distance
 
     # Brute-force small number of victims
@@ -79,7 +79,7 @@ def solve_orienteering_brute_force(V, E, victims, scores, start, L):
     for k in range(0, len(victims) + 1):
         for subset in itertools.combinations(victims, k):
             for perm in itertools.permutations(subset):
-                seq = [start] + list(perm)
+                seq = [start] + list(perm) + [end]
                 length = 0.0
                 feasible = True
                 # pythonic way of summing lengths between concecutives nodes
@@ -136,7 +136,7 @@ def snap_to_nearest_node(input_nodes, V):
             snapped.append(nearest)
     return snapped
 
-def visualization(V, start, victims, best, full_path):
+def visualization(V, start, end, victims, best, full_path):
     # -----------------------------
     # Visualization (assumes prm has been plotted)
     # -----------------------------
@@ -154,6 +154,10 @@ def visualization(V, start, victims, best, full_path):
     for node in V:
         if node == start:
             plt.scatter( node[0],node[1], color="gray", marker="s", s=100, edgecolor="black", zorder=5)
+            plt.text(node[0] + 0.2, node[1] + 0.2, f"start", fontsize=10)
+        elif node == end:
+            plt.scatter(node[0], node[1], color="black", marker="s", s=100, edgecolor="black", zorder=5)
+            plt.text(node[0] + 0.2, node[1] + 0.2, f"end", fontsize=10)
         elif node in victims:
             plt.scatter( node[0],node[1], color="limegreen", s=90, edgecolor="black", zorder=5)
             plt.text(node[0] + 0.2, node[1] + 0.2, f"{scores[node]}", fontsize=10)
@@ -178,108 +182,145 @@ def set_obstacle(center, size, resolution, map):
     return map
 
 
-def solve_orienteering_pulp(V, E, victims, scores, start, L):
+def solve_orienteering_pulp(V, E, victims, scores, start, end, L):
     """
-    Solve the orienteering problem (no return to start) using PuLP MILP.
-
-    Parameters
-    ----------
-    V : list of tuple(float,float)
-    E : dict mapping each node -> list of neighbor nodes
-    victims : list of tuple(float,float)
-    scores : dict mapping victim node -> score value
-    start : tuple(float,float)
-    L : float distance budget
-
-    Returns
-    -------
-    best : dict with 'best_score', 'best_tour', 'best_length'
-    full_path : list of coordinates in the optimal tour
+    Orienteering Problem (Vansteenwegen formulation) with given START and END nodes.
+    - Collect scores on victim nodes only (not start or end)
+    - Must start at 'start' and end at 'end'
+    - Uses shortest-path distances on roadmap (V, E)
     """
-    import pulp as pl
     import math
+    import pulp as pl
 
-    # All candidate nodes = start + victims
-    key_nodes = [start] + victims
-    n = len(key_nodes)
-    index = {node: i for i, node in enumerate(key_nodes)}
+    # ---- Build key nodes ----
+    key_nodes = [start] + victims + [end]
+    N = len(key_nodes)
 
-    # Build full directed graph of reachable arcs
-    arcs = []
+    # ---- Precompute shortest-path distances ----
+    sp_dist = {n: dijkstra(n, V, E)[0] for n in key_nodes}
     dist = {}
     for i in key_nodes:
         for j in key_nodes:
             if i == j:
                 continue
-            # compute shortest-path distance in roadmap
-            d_ij, _ = dijkstra(i, V, E)
-            d = d_ij[j]
+            d = sp_dist[i][j]
             if not math.isinf(d):
-                arcs.append((i, j))
                 dist[(i, j)] = d
 
-    # Initialize MILP
-    model = pl.LpProblem("Orienteering_MILP", pl.LpMaximize)
+    # ---- MILP model ----
+    model = pl.LpProblem("Orienteering_Vansteenwegen", pl.LpMaximize)
 
-    # Variables
-    x = pl.LpVariable.dicts("x", arcs, cat="Binary")
-    y = pl.LpVariable.dicts("y", key_nodes, 0, 1, cat="Binary")
-    u = pl.LpVariable.dicts("u", key_nodes, lowBound=0, upBound=n, cat="Continuous")
+    # Decision variables
+    x = pl.LpVariable.dicts("x", dist.keys(), 0, 1, cat="Binary")  # edge selection
+    #They are ordering variables that encode the visit position of node i in the tour
+    ## MTZ order vars: The bounds 2≤ui≤N simply ensure that Start node is not assigned a position (it’s fixed to 1 conceptually), End node can take up to position N, victims are in the 2, N position
+    u = pl.LpVariable.dicts("u", victims, lowBound=2, upBound=N, cat="Continuous")
 
-    # Objective: maximize collected scores
-    model += pl.lpSum(scores.get(i, 0) * y[i] for i in key_nodes)
+    # ---- Objective ----
+    # Collect score when leaving victim node (standard Vansteenwegen)
+    # Objective: sum_{i=2..N-1} sum_{j=2..N} S_i * x_ij
+    objective_terms = []
+    for i in key_nodes[1:-1]:  # i = 2 .. N-1  (skip start and end)
+        score_i = scores.get(i, 0.0)
+        for j in key_nodes[1:]:  # j = 2 .. N    (skip start only)
+            if (i, j) in x:
+                objective_terms.append(score_i * x[(i, j)])
+    model += pl.lpSum(objective_terms)
 
-    # Degree constraints
-    for i in key_nodes:
-        out_i = pl.lpSum(x[(i, j)] for (i2, j) in arcs if i2 == i)
-        in_i  = pl.lpSum(x[(j, i)] for (j, i2) in arcs if i2 == i)
 
-        if i == start:
-            model += out_i == 1    # must leave start
-            model += in_i == 0     # cannot enter start
-        else:
-            model += out_i <= y[i]
-            model += in_i <= y[i]
+    # ---- Constraints ----
+    # (1) Start and End constraints
+    #start exacly one outgoing none incoming
+    # Collect all arcs that go OUT of the start node
+    outgoing_arcs = []
+    for j in key_nodes[1:]:  # j = 2 .. N
+        if (start, j) in x:  # check if arc exists in our dictionary
+            outgoing_arcs.append(x[(start, j)])  # store that decision variable
+    # Create the linear expression ∑ x[start,j] and add constraint = 1
+    outgoing_sum = pl.lpSum(outgoing_arcs)
+    model += outgoing_sum == 1, "start_out"
+    # Collect all arcs that go INTO the start node
+    incoming_arcs = []
+    for i in key_nodes[1:]:  # j = 2 .. N
+        if (j, start) in x:  # check if arc exists
+            incoming_arcs.append(x[(j, start)])  # store that variable
+    # Create the linear expression ∑ x[i,start] and add constraint = 0
+    incoming_sum = pl.lpSum(incoming_arcs)
+    model += incoming_sum == 0, "start_in"
 
-    # Distance constraint
-    model += pl.lpSum(dist[(i, j)] * x[(i, j)] for (i, j) in arcs) <= L
+    # End: exactly one incoming, none outgoing
+    # Collect all arcs that go OUT of the end node
+    outgoing_arcs = []
+    for i in key_nodes[:-1]:  # i = 1 .. N-1
+        if (end, i) in x:  # check if arc exists in our dictionary
+            outgoing_arcs.append(x[(end, i)])  # store that decision variable
+    # Create the linear expression ∑ x[start,j] and add constraint = 1
+    outgoing_sum = pl.lpSum(outgoing_arcs)
+    model += outgoing_sum == 0, "end_out"
+    # Collect all arcs that go INTO the end node
+    incoming_arcs = []
+    for i in key_nodes[:-1]:  # i = 1 .. N-1
+        if (i, end) in x:  # check if arc exists
+            incoming_arcs.append(x[(i, end)])  # store that variable
+    # Create the linear expression ∑ x[i,start] and add constraint = 0
+    incoming_sum = pl.lpSum(incoming_arcs)
+    model += incoming_sum == 1, "end_in"
 
-    # MTZ constraints (subtour elimination)
-    M = n
-    for (i, j) in arcs:
-        if i == start:
-            continue
-        if j == start:
-            continue
-        model += u[i] - u[j] + 1 <= M * (1 - x[(i, j)])
 
-    # Linking
-    model += y[start] == 1
+    # (2) Flow conservation for victims
+    for k in victims:
+        incoming_arcs = []
+        for i in key_nodes[:-1]:  # i = 1 .. N-1
+            if (i, k) in x:  # check if arc exists
+                incoming_arcs.append(x[(i, k)])  # store that variable
+        inflow = pl.lpSum(incoming_arcs)
 
-    # Solve
+        outgoing_arcs = []
+        for j in key_nodes[1:]:  # i = 2 .. N
+            if (k, j) in x:  # check if arc exists in our dictionary
+                outgoing_arcs.append(x[(k, j)])  # store that decision variable
+        outflow = pl.lpSum(outgoing_arcs)
+        model += inflow == outflow, f"flow_balance_{k}"
+        model += inflow <= 1, f"visit_once_{k}"
+
+    # (3) Total travel length constraint
+    # Create a list to collect all the linear terms
+    distance_terms = []
+    # Iterate over every arc (i, j) that exists in the model
+    for (i, j) in x:
+        # Each arc has a known travel distance and a binary variable x[i,j]
+        # Append the weighted term: distance * variable
+        distance_terms.append(dist[(i, j)] * x[(i, j)] )
+    # Sum all terms using PuLP's linear expression builder
+    total_distance  = pl.lpSum(distance_terms)
+    # Add the budget constraint: total traveled distance ≤ L
+    model += total_distance <= L, "budget"
+
+    # (4) MTZ subtour elimination (no subtours among non-start/end nodes)
+    for (i, j) in x:
+        if i in victims and j in victims:
+            model += u[i] - u[j] + 1 <= (N - 1) * (1 - x[(i, j)]), f"mtz_{i}_{j}"
+
+    # ---- Solve ----
     model.solve(pl.PULP_CBC_CMD(msg=False))
+    print("Solver status:", pl.LpStatus[model.status])
 
-    # Extract solution
-    status = pl.LpStatus[model.status]
-    print("Solver status:", status)
-
-    chosen_arcs = [(i, j) for (i, j) in arcs if pl.value(x[(i, j)]) > 0.5]
-    chosen_nodes = [i for i in key_nodes if pl.value(y[i]) > 0.5]
+    # ---- Extract results ----
+    arcs_chosen = [(i, j) for (i, j) in x if pl.value(x[(i, j)]) > 0.5]
     best_score = pl.value(model.objective)
-    total_length = sum(dist[a] for a in chosen_arcs)
+    total_length = sum(dist[a] for a in arcs_chosen)
 
-    # Reconstruct tour
-    succ = {}
-    for (i, j) in chosen_arcs:
-        succ[i] = j
-
+    # Reconstruct ordered route
+    succ = {i: j for (i, j) in arcs_chosen}
     tour = [start]
     cur = start
-    while cur in succ:
+    seen = {start}
+    while cur in succ and succ[cur] not in seen:
         cur = succ[cur]
         tour.append(cur)
+        seen.add(cur)
 
-    # Convert tour to detailed roadmap path
+    # ---- Expand roadmap path ----
     full_path = []
     for a, b in zip(tour[:-1], tour[1:]):
         seg, _ = shortest_path(a, b, V, E)
@@ -288,9 +329,12 @@ def solve_orienteering_pulp(V, E, victims, scores, start, L):
         else:
             full_path.extend(seg[1:])
 
-    best = {"best_score": best_score, "best_tour": tour, "best_length": total_length}
+    best = {
+        "best_score": best_score,
+        "best_tour": tour,
+        "best_length": total_length
+    }
     return best, full_path
-
 
 
 if __name__ == '__main__':
@@ -311,18 +355,20 @@ if __name__ == '__main__':
     V, E = prm.construct_roadmap(map)
 
     #OP params
-    victims_real = [(9.1, 9.5), (6.7, 5.4), (1.36, 6.34)]
-    start_real = (1, 1)
-    scores_real  = [500, 200, 150]
+    victims_real = [(9.1, 9.5), (6.7, 5.4), (1.36, 6.34), (3, 6.34), (8,9 )]
+    start_real = (4, 9)
+    end_real = (0,1)
+    scores_real  = [500, 200, 150, 300, 40]
     victims = snap_to_nearest_node(victims_real, V)
     start = snap_to_nearest_node(start_real, V)
+    end = snap_to_nearest_node(end_real, V)
     # Build score dictionary: associate score to victims
     scores = {v_node: s for v_node, s in zip(victims, scores_real)}
     L = 25.0  # distance/time budget
     # Then call solver
-    best_result, full_path = solve_orienteering_brute_force(V, E, victims, scores, start, L)
+    #best_result, full_path = solve_orienteering_brute_force(V, E, victims, scores, start, end,  L)
 
-    #best_result, full_path = solve_orienteering_pulp(V, E, victims, scores, start, L)
+    best_result, full_path = solve_orienteering_pulp(V, E, victims, scores, start, end,   L)
 
-    visualization(V, start, victims,best_result,  full_path)
+    visualization(V, start, end, victims,best_result,  full_path)
     print(best_result)
