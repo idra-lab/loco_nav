@@ -1,3 +1,6 @@
 [submodule "limo_hardware_interface"]
 	path = limo_hardware_interface
 	url = git@github.com:idra-lab/limo_hardware_interface.git
+[submodule "limo-firmware"]
+	path = limo-firmware
+	url = https://github.com/idra-lab/limo-firmware.git
