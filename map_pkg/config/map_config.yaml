@@ -40,17 +40,10 @@
     dy: 20.0                    # The height of the rectangle. Not used in hexagon maps
     max_timeout: 3              # Maximum time to spawn the map. NOT MAINTAINED
     
-    init_names: ["shelfino1", "evader", "shelfino3", "pursuer"]   # Names of the robots to be spawned
+    init_names: ["limo0", "evader", "limo1", "pursuer"]   # Names of the robots to be spawned
     init_rand: [true, false, false, false]                       # If true, the robots will be spawned in random positions
     init_x:   [5.5, -5.5,  5.5, -5.5]                             # X position of the robots
     init_y:   [5.5, -5.5, -5.5,  5.5]                             # Y position of the robots
     init_yaw: [0.0,  0.0,  0.0,  0.0]                             # Yaw of the robots
 
-    qos_overrides:
-      /parameter_events:
-        publisher:
-          depth: 1000
-          durability: transient_local
-          history: keep_last
-          reliability: reliable
 

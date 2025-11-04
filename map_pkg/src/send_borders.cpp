@@ -40,7 +40,7 @@ public:
     ROS_INFO("Node created.");
     // Use latched publishers to emulate ROS2 QoS KeepLast(1) durability for static data
     pub_map_borders_     = nh_.advertise<geometry_msgs::Polygon>("/map_borders", 1, /*latch=*/true);
-    pub_borders_stamped_ = nh_.advertise<geometry_msgs::PolygonStamped>("/borders", 1, /*latch=*/true);
+    //pub_borders_stamped_ = nh_.advertise<geometry_msgs::PolygonStamped>("/borders", 1, /*latch=*/true);
   }
 
   bool configure()
@@ -93,7 +93,7 @@ public:
 
     // Publish borders
     pub_map_borders_.publish(pol);
-    pub_borders_stamped_.publish(pol_stamped);
+    //pub_borders_stamped_.publish(pol_stamped);
 
     ROS_INFO("Node active.");
     return true;

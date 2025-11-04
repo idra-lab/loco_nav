@@ -8,7 +8,10 @@ Installation with Docker
    This script is important because it installs the docker client on your machine and adds to your user the privileges to run the docker images
 
 ```
-$ ./install_docker.sh
+$sudo apt install curl
+$curl -o install_docker.sh https://raw.githubusercontent.com/idra-lab/loco_nav/refs/heads/master/install_docker.sh
+$sudo chmod +x install_docker.sh
+$./install_docker.sh
 ```
 - If everything went smooth you should read: **To start docker, reboot the system!** You can now restart the PC so that all changes made can be applied.
 - If you look into your **host** Ubuntu home directory, you will see that the **trento_lab_home** directory has been created with **/ros_ws/src** subfolders.
@@ -38,30 +41,35 @@ $ git clone https://github.com/idra-lab/loco_nav.git
 - Now, you need to configure the bash environment of your Ubuntu machine as follows. Open the `bashrc` file from your home folder:
 
 
-  ```
-  $ gedit ~/.bashrc
-  ```
+```
+$ gedit ~/.bashrc
+```
 
 - and add the following lines at the bottom of the file:
 
-  ```bash
-  alias lab_planning='xhost +local:root; docker rm -f docker_container || true; \
-  docker run --name docker_container --gpus all \
-  --workdir="/root" \
-  --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-  --device=/dev/dri:/dev/dri \
-  --network=host --hostname=docker -it \
-  --env="DISPLAY=$DISPLAY" \
-  --env="QT_X11_NO_MITSHM=1" \
-  --privileged --shm-size 2g --rm \
-  --volume $HOME/trento_lab_home:/root \
-  mfocchi/trento_lab_framework:loco_nav'
-  alias dock-other='docker exec -it docker_container /bin/bash'
-  ```
+```bash
+alias lab_planning='xhost +local:root; docker rm -f docker_container || true; \
+docker run --name docker_container --gpus all \
+--workdir="/root" \
+--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+--device=/dev/dri:/dev/dri \
+--network=host --hostname=docker -it \
+--env="DISPLAY=$DISPLAY" \
+--env="QT_X11_NO_MITSHM=1" \
+--privileged --shm-size 2g --rm \
+--volume $HOME/trento_lab_home:/root \
+mfocchi/trento_lab_framework:loco_nav'
+alias dock-other='docker exec -it docker_container /bin/bash'
+```
+
+- Load the .bashrc script (next time you will open a terminal this will be automatically loaded).
 
 
+```
+$ source ~/.bashrc
+```
 
-  **NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **-nv** flag in the **lab** alias.
+**NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **--gpus all**  in the **lab** alias.
 
 - Open a terminal and run the "lab" alias:
 
@@ -163,36 +171,4 @@ and you will obtain a **value**  (e.g. :0) if you run the same command in a dock
 ```
 export DISPLAY=value
 ```
-
-- When installing docker using ./installation_tools/install_docker.sh you may have a pip3 syntax error. 
-
-You could try to solve it in this way:
-
-```
-curl https://bootstrap.pypa.io/pip/3.5/get-pip.py -o get-pip.py
-python3 get-pip.py
-rm get-pip.py
-```
-
-- If you do not have Nvidia drivers installed, then make sure you are not using the `-nv` option when launching `lab-docker.py`. You may get a message in the terminal that looks like this:
-
-  ![nvidia_issue](uploads/cd09602de0f7edd1e0432359754f495c/nvidia_issue.jpeg)
-
-  
-
-- Nvidia error: could not select device driver “” with capabilities:
-
-You can solve this way:
-
-```
-sudo apt install -y nvidia-docker2
-sudo systemctl daemon-reload
-sudo systemctl restart docker
-```
-
-
-
-
-
-
 
