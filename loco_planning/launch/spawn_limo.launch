@@ -24,8 +24,6 @@
     <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
           args="-urdf -param robot_description -model $(arg robot_name) -x $(arg x_pos) -y $(arg y_pos)  -Y $(arg yaw_pos)"/>
 
-    <!-- AMCL Localization -->
-    <!--node pkg="amcl" type="amcl" name="amcl" output="screen"/-->
 
     <!-- Publish robot joint states -->
     <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">

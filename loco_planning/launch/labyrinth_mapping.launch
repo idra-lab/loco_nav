@@ -1,17 +1,13 @@
 <?xml version="1.0"?>
 <launch>
 
-  <!-- for sim unset ROS_IP-->
-  <arg name="real_robot" default="false" />
-
-
   <!-- Parameters -->
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
   <arg name="world_name" default="labyrinth.world" />
-  <arg name="elements_models_path" default="$(find map_pkg)/models" />
-  <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
-  <!--if   true it starts lidar-->
+
+  <!--if
+  true it starts lidar-->
   <arg name="sensors" default="true" />
   <arg name="spawn_x" default="0.0" />
   <arg name="spawn_y" default="0." />
@@ -25,7 +21,8 @@
   <env name="GAZEBO_MODEL_PATH" value="$(find map_pkg)/models" />
   <env name="GAZEBO_RESOURCE_PATH" value="$(find map_pkg)/worlds" />
 
-  <!--Start  gazebo-->
+  <!--Start
+  gazebo-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find map_pkg)/worlds/$(arg world_name)" />
     <arg name="paused" value="false" />
@@ -38,30 +35,31 @@
 
   <!-- Spawn limo0 in simulation -->
   <group ns="limo0">
-      <!--load
+    <!--load
       urdf in robot_description rosparam-->
-      <include file="$(find limo_description)/launch/upload.launch">
-        <arg name="robot_id" default="$(arg robot_id)" />
-        <arg name="sensors" default="$(arg sensors)" />
-      </include>
+    <include file="$(find limo_description)/launch/upload.launch">
+      <arg name="robot_id" default="$(arg robot_id)" />
+      <arg name="sensors" default="$(arg sensors)" />
+    </include>
 
-      <!-- Spawn limo0 in simulation -->
-      <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
-        args="-urdf -param robot_description -model limo$(arg robot_id) -param robot_description -model limo0 -x $(arg spawn_x) -y $(arg spawn_y) -z $(arg spawn_z)  -Y $(arg spawn_Y)" />
+    <!-- Spawn limo0 in simulation -->
+    <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
+      args="-urdf -param robot_description -model limo$(arg robot_id) -param robot_description -model limo0 -x $(arg spawn_x) -y $(arg spawn_y) -z $(arg spawn_z)  -Y $(arg spawn_Y)" />
 
-      <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
-        output="screen">
-        <param name="publish_frequency" value="100" />
-      </node>
-
-      <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
-        args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+      output="screen">
+      <param name="publish_frequency" value="100" />
+    </node>
+    
+    <!-- this is only needed if you do not run gmapping-->		
+    <!--node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
+      args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" /-->
   </group>
 
-  <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find loco_planning)/rviz/conf_mapping.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"
+    args="-d $(find loco_planning)/rviz/conf_mapping.rviz" />
 
-
-  <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="screen">
+  <node pkg="gmapping" type="slam_gmapping" name="gmapping">
     <!-- Remap laser topic -->
     <remap from="scan" to="/limo0/scan" />
     <!-- Remap odometry -->
@@ -80,7 +78,8 @@
   </node>
 
 
-  <!--node  pkg="key_teleop" type="key_teleop.py" name="teleop_arrow" output="screen"
+  <!--node
+  pkg="key_teleop" type="key_teleop.py" name="teleop_arrow" output="screen"
   args="cmd_vel:=/limo0/cmd_vel"/-->
 
   <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py"
@@ -88,7 +87,8 @@
     <remap from="cmd_vel" to="/limo0/cmd_vel" />
   </node>
 
-  <!-- FINAL STEP  when you explored the map rosrun map_server map_saver -f $(rospack find map_pkg)/maps/labyrinth -->
+  <!-- FINAL STEP  when you explored the map rosrun map_server map_saver -f $(rospack find
+  map_pkg)/maps/labyrinth -->
 
 
 </launch>
