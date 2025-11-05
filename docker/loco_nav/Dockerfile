@@ -52,10 +52,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-turtlebot3-* \
     ros-noetic-move-base \
     ros-noetic-slam-gmapping \
+    ros-noetic-slam-toolbox \ 
     ros-noetic-key-teleop \
     ros-noetic-imu-sensor-controller \
     ros-noetic-diff-drive-controller \
-    ros-noetic-eigenpy \                      
+    ros-noetic-eigenpy \            
  && rm -rf /var/lib/apt/lists/*
 
 # Python extras
@@ -70,7 +71,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir cvxpy==1.2.0
 
 
-# Add gedit for debugging
 #utils
 RUN apt-get update && apt-get install -y --no-install-recommends  \ 	 
 		 gedit\
@@ -84,7 +84,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libfcl-dev pyth
 RUN pip install --no-cache-dir shapely quadprog
  
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-catkin-pkg python3-rospkg python3-empy ros-noetic-catkin \
+    python3-catkin-pkg python3-rospkg python3-empy ros-noetic-catkin rospack-tools \
  && rm -rf /var/lib/apt/lists/*
 
 RUN python3 - <<'PY'
