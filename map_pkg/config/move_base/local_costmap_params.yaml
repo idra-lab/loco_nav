@@ -1,0 +1,12 @@
+local_costmap:
+  global_frame: limo0/odom
+  robot_base_frame: limo0/base_link
+  rolling_window: true
+  width: 4.0
+  height: 4.0
+  resolution: 0.05
+  update_frequency: 7.0
+  publish_frequency: 3.0
+  static_map: false
+  transform_tolerance: 0.5
+  footprint: [[0.15, 0.12], [0.15, -0.12], [-0.15, -0.12], [-0.15, 0.12]]
