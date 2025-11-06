@@ -53,6 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-move-base \
     ros-noetic-slam-gmapping \
     ros-noetic-slam-toolbox \ 
+    ros-noetic-teb-local-planner \
     ros-noetic-key-teleop \
     ros-noetic-imu-sensor-controller \
     ros-noetic-diff-drive-controller \

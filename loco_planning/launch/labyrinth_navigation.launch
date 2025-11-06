@@ -83,21 +83,17 @@
  
 
     <!-- Move base node -->
-<node pkg="move_base" type="move_base" name="move_base" output="screen" launch-prefix="bash -c 'sleep 5; $0 $@'">
+<node pkg="move_base" type="move_base" name="move_base" output="screen" >
   <!-- Planners -->
   <param name="base_global_planner" value="navfn/NavfnROS" />
-  <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
+  <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" /> <!-- teb_local_planner/TebLocalPlannerROS dwa_local_planner/DWAPlannerROS -->
 
 <rosparam file="$(find map_pkg)/config/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
 <rosparam file="$(find map_pkg)/config/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
 <rosparam file="$(find map_pkg)/config/move_base/global_costmap_params.yaml" command="load" />
 <rosparam file="$(find map_pkg)/config/move_base/local_costmap_params.yaml" command="load" />
 <rosparam file="$(find map_pkg)/config/move_base/dwa_local_planner_params.yaml" command="load" />
-
-
-
-  <!-- Load DWA planner parameters -->
-  <rosparam file="$(find map_pkg)/config/move_base/dwa_local_planner_params.yaml" command="load" ns="move_base" />
+<rosparam file="$(find map_pkg)/config/move_base/teb_local_planner_params.yaml" command="load" />
 
   <!-- Topic remappings -->
   <remap from="cmd_vel" to="/limo0/cmd_vel" />

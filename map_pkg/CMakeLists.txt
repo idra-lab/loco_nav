@@ -99,6 +99,11 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
   PATTERN ".svn" EXCLUDE)
   
+      
+ install(DIRECTORY config/move_base
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config/move_base
+  PATTERN ".svn" EXCLUDE)
+  
   install(DIRECTORY worlds/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/worlds
   PATTERN ".svn" EXCLUDE)
