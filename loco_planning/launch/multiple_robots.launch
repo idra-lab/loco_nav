@@ -1,18 +1,20 @@
 <?xml version="1.0"?>
 <launch>
 
-  <!-- Parameters -->
-  <arg name="use_sim_time" default="true" />
+  <!-- input Parameters -->
   <arg name="use_gui" default="true" />
   <arg name="use_rviz" default="true" />
-  <arg name="world_name" default="empty.world" />
+  <arg name="victims_activated" default="true" />
+  <arg name="generate_new_config" default="true" />
+  <arg name="start_controller" default="true" />
+  <arg name="debug" default="false" />
 
+  <!-- Parameters -->
+  <arg name="world_name" default="empty.world" />
   <arg name="gen_map_params_file" default="$(find map_pkg)/config/full_config.yaml" />
   <arg name="elements_models_path" default="$(find map_pkg)/models" />
   <arg name="gazebo_models_path" default="$(find map_pkg)/worlds" />
 
-  <arg name="victims_activated" default="true" />
-  <arg name="generate_new_config" default="true" />
 
   <arg name="x_pos" default="0.0" />
   <arg name="y_pos" default="0." />
@@ -21,9 +23,6 @@
   <arg name="x_pos1" default="2.0" />
   <arg name="y_pos1" default="1." />
   <arg name="yaw_pos1" default="0.0" />
-
-  <arg name="start_controller" default="false" />
-  <arg name="debug" default="false" />
 
   <!-- Set parameters in param server-->
   <param name="use_sim_time" value="$(arg use_sim_time)" />

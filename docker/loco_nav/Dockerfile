@@ -61,7 +61,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 # Python extras
-RUN pip3 install --no-cache-dir  pyclipper
+RUN pip3 install --no-cache-dir  pyclipper pulp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-scipy \
     python3-matplotlib \

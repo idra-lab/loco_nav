@@ -69,27 +69,31 @@ def solve_tsp_pulp(V, E, cities, start):
             if not math.isinf(d):
                 dist[(i, j)] = d
 
+
     # ---- MILP model ----
     model = pl.LpProblem("TSP_MTZ", pl.LpMinimize)
 
     # Binary edge variables
     x = pl.LpVariable.dicts("x", dist.keys(), 0, 1, cat="Binary")
 
-    # MTZ order variables
-    u = pl.LpVariable.dicts("u", key_nodes, lowBound=1, upBound=N, cat="Continuous")
+    # MTZ u_i order variables,   u_start fixed to 1; others in [2, N]
+    u = {}
+    for n in key_nodes:
+        if n == start:
+            u[n] = pl.LpVariable(f"u_{n}", lowBound=1, upBound=1, cat="Continuous")
+        else:
+            u[n] = pl.LpVariable(f"u_{n}", lowBound=2, upBound=N, cat="Continuous")
 
     # ---- Objective ----
     objective_terms = []
     for (i, j) in dist.keys():
+        if i == j:
+            continue
         objective_terms.append(dist[(i, j)] * x[(i, j)])
     model += pl.lpSum(objective_terms)
 
     # ---- Constraints ----
-
-    # (1) Fix starting node order
-    model += u[start] == 1, "fix_start_position"
-
-    # (2) Each node has exactly one outgoing arc
+    # (1) Each node has exactly one outgoing arc
     for i in key_nodes:
         outgoing = []
         for j in key_nodes:
@@ -99,7 +103,7 @@ def solve_tsp_pulp(V, E, cities, start):
                 outgoing.append(x[(i, j)])
         model += pl.lpSum(outgoing) == 1, f"out_degree_{i}"
 
-    # (3) Each node has exactly one incoming arc
+    # (2) Each node has exactly one incoming arc
     for j in key_nodes:
         incoming = []
         for i in key_nodes:
@@ -109,25 +113,20 @@ def solve_tsp_pulp(V, E, cities, start):
                 incoming.append(x[(i, j)])
         model += pl.lpSum(incoming) == 1, f"in_degree_{j}"
 
-    # (4) MTZ subtour elimination: apply only for nodes 2..N (exclude start)
+    # (3) MTZ subtour elimination: apply only for nodes 2..N (skip start, skip i==j, skip arcs touching start)
+    # u[i] - u[j] + N*x[i,j] <= N-1  for all i!=j, i!=start, j!=start with (i,j) in key_nodes
     for i in key_nodes:
-        if i == start:
-            continue
         for j in key_nodes:
-            if j == start or i == j:
+            if i == start or j == start or i == j:
                 continue
             if (i, j) in x:
                 model += u[i] - u[j] + N * x[(i, j)] <= N - 1, f"mtz_{i}_{j}"
 
-    # (5) Bounds for u_i (2 ≤ u_i ≤ N) for all except start
-    for i in key_nodes:
-        if i != start:
-            model += u[i] >= 2, f"lower_bound_{i}"
-            model += u[i] <= N, f"upper_bound_{i}"
-
     # ---- Solve ----
     model.solve(pl.PULP_CBC_CMD(msg=False))
     print("Solver status:", pl.LpStatus[model.status])
+    if pl.LpStatus[model.status] != "Optimal":
+        raise RuntimeError(f"TSP solve did not find an optimal tour (status={pl.LpStatus[model.status]}).")
 
     # ---- Extract results ----
     arcs_chosen = []
@@ -167,7 +166,7 @@ def solve_tsp_pulp(V, E, cities, start):
 
     best = {
         "best_tour": tour,
-        "best_length": total_length
+        "best_length": total_length,
     }
 
     return best, full_path
@@ -183,13 +182,14 @@ def visualization_tsp(V, cities, start, best, full_path):
     """
     # Extract tour from best result
     tour = best.get("best_tour", [])
+    order_map = {city: idx for idx, city in enumerate(tour[:-1])}  # exclude duplicate last=start
 
-    # Draw tour connections between cities (in straight lines)
+    # Draw tour connections (as polylines) between cities (in straight lines)
     if tour:
         for a, b in zip(tour[:-1], tour[1:]):
             plt.plot([a[0], b[0]], [a[1], b[1]], color="red", linewidth=3, alpha=0.3)
 
-    # Draw the expanded PRM path (actual roadmap route)
+    # Draw the expanded optimal PRM path on tour
     if full_path:
         for a, b in zip(full_path[:-1], full_path[1:]):
             plt.plot([a[0], b[0]], [a[1], b[1]], color="red", linewidth=2.0)
@@ -197,7 +197,9 @@ def visualization_tsp(V, cities, start, best, full_path):
     # Plot the city nodes (green)
     for node in cities:
         plt.scatter(node[0], node[1], color="limegreen", s=90, edgecolor="black", zorder=5)
-        plt.text(node[0] + 0.2, node[1] + 0.2, f"{cities.index(node)}", fontsize=9)
+        if node in order_map:
+            order = order_map[node]
+            plt.text(node[0] + 0.2, node[1] + 0.2, f"{order}", fontsize=9, fontweight="bold", color="blue")
 
     # Highlight the start node
     plt.scatter(start[0], start[1], color="gray", marker="s", s=110, edgecolor="black", zorder=6)
@@ -206,14 +208,12 @@ def visualization_tsp(V, cities, start, best, full_path):
     plt.title(f"TSP Optimal Tour (red)\nLength = {best['best_length']:.2f} m")
     plt.grid(True, linestyle="--", alpha=0.3)
     plt.xlabel("X [m]")
+    plt.xlim([0,10])
+    plt.ylim([0,10])
     plt.ylabel("Y [m]")
     plt.axis("equal")
     plt.show()
 
-def solve_len(tour, V, E):
-    # helper for title only; uses dijkstra distances like the model
-    sp = {u: dijkstra(u, V, E)[0] for u in set(tour)}
-    return sum(sp[a][b] for a, b in zip(tour[:-1], tour[1:]))
 
 
 def snap_to_nearest_node(input_nodes, V):
@@ -276,18 +276,19 @@ if __name__ == '__main__':
     set_obstacle(center=(4,4.5), size=1.5, resolution=resolution, map=map)
     # square  centered at(4,4.5) size = 1
     set_obstacle(center=(8, 4), size=1, resolution=resolution, map=map)
-    prm = PRM(n_samples=200, k=10, resolution=resolution, seed=0)
+    prm = PRM(n_samples=300, k=10, resolution=resolution, seed=0)
 
     # 1. Build roadmap V = Vertex, E = Edges
     V, E = prm.construct_roadmap(map)
 
     # TSP params (visit all these points and return to start)
-    cities_real = [(4, 9), (9.1, 9.5), (6.7, 5.4), (1.36, 6.34), (3, 6.34), (8, 9)]
+    cities_real = [(4, 9),  (8, 9),(1.5, 2.2) , (6.7, 5.4),  (3, 6.34),(9.1, 9.5) ]
     cities = snap_to_nearest_node(cities_real, V)
     start = cities[0]  # or pick any other in 'cities'
 
     best_result, full_path = solve_tsp_pulp(V, E, cities, start)
-    print(best_result)
+
+
 
     visualization_tsp(V, cities, start, best_result, full_path)
     print(best_result)
