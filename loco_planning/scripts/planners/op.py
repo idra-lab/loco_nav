@@ -5,6 +5,7 @@ import math
 import itertools
 import matplotlib.pyplot as plt
 import heapq
+import time
 
 def euclid(a, b):
     """Euclidean distance between two (x, y) points."""
@@ -41,7 +42,7 @@ def dijkstra(source, V, E):
                 heapq.heappush(pq, (nd, v))
     return dist, parent
 
-def solve_orienteering_brute_force(V, E, victims, scores, start, end, L):
+def solve_orienteering_brute_force(V, E, victims, scores, start, end, Dmax):
     """
     Solve a small Orienteering Problem on a given roadmap.
 
@@ -57,7 +58,7 @@ def solve_orienteering_brute_force(V, E, victims, scores, start, end, L):
         Mapping victim node -> score value.
     start : tuple(float,float)
         Starting node coordinate (must be in V).
-    L : float
+    Dmax : float
         Maximum travel distance (budget).
 
     Returns
@@ -92,7 +93,7 @@ def solve_orienteering_brute_force(V, E, victims, scores, start, end, L):
                 if not feasible:
                     continue
                 score = sum(scores[v] for v in subset)
-                if length <= L and score > best["best_score"]:
+                if length <= Dmax and score > best["best_score"]:
                     best = {"best_score": score, "best_tour": seq, "best_length": length, "end": seq[-1]}
 
     # Reconstruct full local path
@@ -161,9 +162,10 @@ def visualization(V, start, end, victims, best, full_path):
         elif node in victims:
             plt.scatter( node[0],node[1], color="limegreen", s=90, edgecolor="black", zorder=5)
             plt.text(node[0] + 0.2, node[1] + 0.2, f"{scores[node]}", fontsize=10)
-    plt.title(f"Optimal Tour (red)\nScore={best['best_score']}, Length={best['best_length']:.2f} m")
+    plt.title(f"Optimal Tour (red)\nScore={best['best_score']}, Total Cost={best['best_length']:.2f} m")
     plt.grid(True, linestyle="--", alpha=0.3)
     plt.show()
+
 
 
 
@@ -182,7 +184,7 @@ def set_obstacle(center, size, resolution, map):
     return map
 
 
-def solve_orienteering_pulp(V, E, victims, scores, start, end, L):
+def solve_orienteering_pulp(V, E, victims, scores, start, end, Dmax):
     """
     Orienteering Problem (Vansteenwegen formulation) with given START and END nodes.
     - Collect scores on victim nodes only (not start or end)
@@ -294,12 +296,12 @@ def solve_orienteering_pulp(V, E, victims, scores, start, end, L):
     # Sum all terms using PuLP's linear expression builder
     total_distance  = pl.lpSum(distance_terms)
     # Add the budget constraint: total traveled distance ≤ L
-    model += total_distance <= L, "budget"
+    model += total_distance <= Dmax, "budget"
 
     # (4) MTZ subtour elimination (no subtours among non-start/end nodes)
     for (i, j) in x:
         if i in victims and j in victims:
-            model += u[i] - u[j] + 1 <= (N - 1) * (1 - x[(i, j)]), f"mtz_{i}_{j}"
+            model += u[i] - u[j] + N * x[(i, j)] <= N - 1, f"mtz_{i}_{j}"
 
     # ---- Solve ----
     model.solve(pl.PULP_CBC_CMD(msg=False))
@@ -349,26 +351,41 @@ if __name__ == '__main__':
     set_obstacle(center=(4,4.5), size=1.5, resolution=resolution, map=map)
     # square  centered at(4,4.5) size = 1
     set_obstacle(center=(8, 4), size=1, resolution=resolution, map=map)
-    prm = PRM(n_samples=200, k=10, resolution=resolution, seed=0)
+    prm = PRM(n_samples=300, k=10, resolution=resolution, seed=0)
 
     # 1. Build roadmap V = Vertex, E = Edges
     V, E = prm.construct_roadmap(map)
 
     #OP params
-    victims_real = [(9.1, 9.5), (6.7, 5.4), (1.36, 6.34), (3, 6.34), (8,9 )]
+
+    #5 victims
+    victims_real = [(9.1, 9.5), (6.7, 5.4), (1.36, 6.34), (3, 6.34), (8, 9)]
+    scores_real = [500, 200, 150, 300, 40]
+
+    #10 victims
+    #victims_real = [(9.1, 9.5), (6.7, 5.4), (1.36, 6.34), (3, 6.34), (8,9 ), (9.1/2, 9.5/2) , (6.7/2, 5.4/2) , (1.36/2, 6.34/2) , (3/2, 6.34/2), (8/2,9/2 )]
+    #scores_real = [500, 200, 150, 300, 40, 500, 200, 150, 300, 40]
+
     start_real = (4, 9)
     end_real = (0,1)
-    scores_real  = [500, 200, 150, 300, 40]
     victims = snap_to_nearest_node(victims_real, V)
     start = snap_to_nearest_node(start_real, V)
     end = snap_to_nearest_node(end_real, V)
     # Build score dictionary: associate score to victims
     scores = {v_node: s for v_node, s in zip(victims, scores_real)}
-    L = 25.0  # distance/time budget
-    # Then call solver
-    #best_result, full_path = solve_orienteering_brute_force(V, E, victims, scores, start, end,  L)
+    Dmax = 25.0  # distance/time budget
 
-    best_result, full_path = solve_orienteering_pulp(V, E, victims, scores, start, end,   L)
+    # Then call solver
+    t0 = time.time()
+    best_result, full_path = solve_orienteering_brute_force(V, E, victims, scores, start, end,  Dmax)
+    #best_result, full_path = solve_orienteering_pulp(V, E, victims, scores, start, end,  Dmax)
+    t1 = time.time()
+    print(f"runtime={t1 - t0:.6f} sec")
 
     visualization(V, start, end, victims,best_result,  full_path)
-    print(best_result)
+    visited_victims = [v for v in victims if v in best_result["best_tour"]]
+    visited_percentage = 100.0 * len(visited_victims) / len(victims)
+    print(f"total score: {best_result['best_score']} ")
+    print(f"total cost: {best_result['best_length']} ")
+    print(f"Visited victims: {len(visited_victims)} / {len(victims)} "  f"({visited_percentage:.1f}%)")
+
