@@ -8,6 +8,7 @@
 
   <!--if  true it starts lidar-->
   <arg name="sensors" default="true" />
+  
   <arg name="spawn_x" default="0.0" />
   <arg name="spawn_y" default="0." />
   <arg name="spawn_z" default="0.2" />

@@ -10,6 +10,9 @@
     <arg name="y_pos" default="0."/>
     <arg name="yaw_pos" default="0.0"/>
 
+ <!--spawn the limo0 robot  -->
+    <include file="$(find limo_description)/launch/upload.launch"/>
+
     <!--Spawn Gazebo-->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="paused" value="false"/>
@@ -19,8 +22,9 @@
         <arg name="debug" value="false"/>
     </include>
 
-    <!--spawn the limo0 robot  -->
-    <include file="$(find limo_description)/launch/upload.launch"/>
+   
+    
+    
     <node name="spawn_model" pkg="gazebo_ros" type="spawn_model"
           args="-urdf -param robot_description -model $(arg robot_name) -x $(arg x_pos) -y $(arg y_pos)  -Y $(arg yaw_pos)"/>
 

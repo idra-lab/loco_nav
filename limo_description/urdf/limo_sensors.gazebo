@@ -35,14 +35,8 @@
 	    <plugin name="gazebo_ros_laser_sensor" filename="libgazebo_ros_laser.so">
 	      <!-- Namespace so topics are /limo0/scan, /limo1/scan, etc. -->
 	      <robotNamespace>/limo${robot_id}</robotNamespace>
-
-	      <!-- Match URDF TF frame -->
 	      <frameName>limo${robot_id}/laser_link</frameName>
-
 	      <referenceFrame>limo${robot_id}/base_link</referenceFrame>
-	 
-
-	      <!-- Output topic -->
 	      <topicName>scan</topicName>
 	      <updateRate>20.0</updateRate>
 	    </plugin>

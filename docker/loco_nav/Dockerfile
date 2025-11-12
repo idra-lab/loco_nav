@@ -66,11 +66,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-scipy \
     python3-matplotlib \
     python3-termcolor \
+    cvxpy==1.2.0 \
  && rm -rf /var/lib/apt/lists/*
 
-# cvxpy (pin the version you asked)
-RUN pip install --no-cache-dir cvxpy==1.2.0
-
+ 
 
 #utils
 RUN apt-get update && apt-get install -y --no-install-recommends  \ 	 

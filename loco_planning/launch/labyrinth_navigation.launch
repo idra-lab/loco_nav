@@ -88,12 +88,14 @@
   <param name="base_global_planner" value="navfn/NavfnROS" />
   <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" /> <!-- teb_local_planner/TebLocalPlannerROS dwa_local_planner/DWAPlannerROS -->
 
-<rosparam file="$(find map_pkg)/config/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
-<rosparam file="$(find map_pkg)/config/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
-<rosparam file="$(find map_pkg)/config/move_base/global_costmap_params.yaml" command="load" />
-<rosparam file="$(find map_pkg)/config/move_base/local_costmap_params.yaml" command="load" />
-<rosparam file="$(find map_pkg)/config/move_base/dwa_local_planner_params.yaml" command="load" />
-<rosparam file="$(find map_pkg)/config/move_base/teb_local_planner_params.yaml" command="load" />
+<rosparam file="$(find loco_planning)/config/move_base/move_base_params.yaml" command="load"/>
+
+<rosparam file="$(find loco_planning)/config/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
+<rosparam file="$(find loco_planning)/config/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
+<rosparam file="$(find loco_planning)/config/move_base/global_costmap_params.yaml" command="load" />
+<rosparam file="$(find loco_planning)/config/move_base/local_costmap_params.yaml" command="load" />
+<rosparam file="$(find loco_planning)/config/move_base/dwa_local_planner_params.yaml" command="load" />
+<rosparam file="$(find loco_planning)/config/move_base/teb_local_planner_params.yaml" command="load" />
 
   <!-- Topic remappings -->
   <remap from="cmd_vel" to="/limo0/cmd_vel" />
