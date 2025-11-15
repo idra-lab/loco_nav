@@ -25,7 +25,7 @@
   <arg name="yaw_pos1" default="0.0" />
 
   <!-- Set parameters in param server-->
-  <param name="use_sim_time" value="$(arg use_sim_time)" />
+  <param name="use_sim_time" value="true" />
 
   <!-- Spawn map publishes borders and obstacles-->
   <include file="$(find map_pkg)/launch/spawn_map.launch">
