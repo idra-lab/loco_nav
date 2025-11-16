@@ -3,7 +3,7 @@ Installation with Docker
 
 - Run the script 
 
-  [install_docker.sh]: https://github.com/mfocchi/loco_nav/tree/master/install_docker.sh
+  [install_docker.sh]: https://github.com/idra-lab/loco_nav/tree/master/install_docker.sh
 
    This script is important because it installs the docker client on your machine and adds to your user the privileges to run the docker images
 

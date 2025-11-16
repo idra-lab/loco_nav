@@ -15,7 +15,6 @@ locales git curl gnupg2 lsb-release build-essential wget cmake python3 python3-p
 
 # Install extra ROS packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-rosdep \
     ros-noetic-urdfdom-py \
     ros-noetic-srdfdom \
     ros-noetic-joint-state-publisher \
@@ -33,12 +32,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-eigen-conversions \
     ros-noetic-object-recognition-msgs \
     ros-noetic-roslint \
-    ros-noetic-ur-msgs \
-    ros-noetic-speed-scaling-interface \
-    ros-noetic-scaled-joint-trajectory-controller \
-    ros-noetic-speed-scaling-state-controller \
-    ros-noetic-ur-client-library \
-    ros-noetic-pass-through-controllers \
     ros-noetic-gazebo-plugins \
     ros-noetic-gazebo-ros-control \
     ros-noetic-ros-control \
@@ -57,36 +50,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-key-teleop \
     ros-noetic-imu-sensor-controller \
     ros-noetic-diff-drive-controller \
-    ros-noetic-eigenpy \            
+    ros-noetic-eigenpy \       
+    rospack-tools \       
  && rm -rf /var/lib/apt/lists/*
 
 # Python extras
-RUN pip3 install --no-cache-dir  pyclipper pulp
+RUN pip3 install --no-cache-dir \  
+    pyclipper \
+    pulp \
+    cvxpy==1.2.0 \
+    shapely \
+    quadprog 
+    
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-scipy \
     python3-matplotlib \
     python3-termcolor \
-    cvxpy==1.2.0 \
+    python3-tk \
+    python3-catkin-pkg \
+    python3-rospkg \   
+    python3-rosdep \ 
+    python3-empy \    
  && rm -rf /var/lib/apt/lists/*
 
- 
 
 #utils
 RUN apt-get update && apt-get install -y --no-install-recommends  \ 	 
 		 gedit\
 		 gitg\
 		 git-cola\
-		libxext6 libxrender1 libxtst6 libxi6 libfreetype6 fonts-dejavu \ 
-		libgl1-mesa-glx libgtk-3-0 
-
-RUN apt-get update && apt-get install -y --no-install-recommends libfcl-dev python3-tk
+		 libfcl-dev libxext6 libxrender1 libxtst6 libxi6 libfreetype6 fonts-dejavu \ 
+		 libgl1-mesa-glx libgtk-3-0 
  
-RUN pip install --no-cache-dir shapely quadprog
- 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-catkin-pkg python3-rospkg python3-empy ros-noetic-catkin rospack-tools \
- && rm -rf /var/lib/apt/lists/*
-
 RUN python3 - <<'PY'
 import re, pathlib
 paths = [
