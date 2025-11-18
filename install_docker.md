@@ -1,15 +1,12 @@
 Installation with Docker
 ================================================================================
 
-- Run the script 
+- Run the script install_docker. This script is important because it installs the docker client on your machine and adds to your user the privileges to run the docker images
 
-  [install_docker.sh]: https://github.com/idra-lab/loco_nav/tree/master/install_docker.sh
-
-   This script is important because it installs the docker client on your machine and adds to your user the privileges to run the docker images
 
 ```
 $sudo apt install curl
-$curl -o install_docker.sh https://raw.githubusercontent.com/idra-lab/loco_nav/refs/heads/master/install_docker.sh
+$curl -o install_docker.sh https://raw.githubusercontent.com/idra-lab/loco_nav/refs/heads/master/docker/loco_nav/install_docker.sh
 $sudo chmod +x install_docker.sh
 $./install_docker.sh
 ```
