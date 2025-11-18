@@ -164,7 +164,13 @@ teleop_contro => start a teleop_keyboard node to issue velocity commands
 
 N.B. if you want to switch back to sim run the alias **sim**
 
+6. To test a chicane trajectory run the code:
 
+```
+python3 -i limo_control.py
+```
+
+you can use this code both for simulation and real robot, just set the parameter real_robot: False/True in **params.yaml**. If you use limo_control.py he will take care of calling the alias real_robot and sim autonomatically, you do not have to do it.
 
 ### IDE Pycharm
 

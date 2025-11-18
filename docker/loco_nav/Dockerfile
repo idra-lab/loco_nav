@@ -104,7 +104,8 @@ RUN echo '#!/bin/bash' >> /etc/bash.bashrc && \
     echo '[ -f /root/ros_ws/install/setup.bash ] && source /root/ros_ws/install/setup.bash' >> /etc/bash.bashrc && \
     echo 'export LOCONAV_DIR=/root/ros_ws/src/loco_nav' >> /etc/bash.bashrc && \
     echo 'export PYTHONPATH=$PYTHONPATH:$LOCONAV_DIR/loco_planning/scripts' >> /etc/bash.bashrc && \
-    echo 'alias real_robot='\''export ROS_IP=$LIMO_IP'\''' >> /etc/bash.bashrc && \
+    echo 'export HOSTCOMPUTER_IP=$(grep hostcomputer /etc/hosts | awk '\''{print $1}'\'')' >> /etc/bash.bashrc && \
+    echo 'alias real_robot='\''export ROS_IP=$HOSTCOMPUTER_IP'\''' >> /etc/bash.bashrc && \ 
     echo 'alias sim='\''unset ROS_IP'\''' >> /etc/bash.bashrc && \
     echo 'alias pycharm='\''/root/pycharm/bin/pycharm.sh'\''' >> /etc/bash.bashrc
 RUN chmod +x /etc/bash.bashrc

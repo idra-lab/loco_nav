@@ -52,6 +52,7 @@ docker run --name docker_container --gpus all \
 --device=/dev/dri:/dev/dri \
 --network=host --hostname=docker -it \
 --env="DISPLAY=$DISPLAY" \
+--env="LIMO_IP=$LIMO_IP" \
 --env="QT_X11_NO_MITSHM=1" \
 --privileged --shm-size 2g --rm \
 --volume $HOME/trento_lab_home:/root \

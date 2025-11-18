@@ -1,5 +1,6 @@
 from termcolor import colored
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import JointState
 from tf.transformations import euler_from_quaternion
 import rospy as ros
 import subprocess, roslaunch, rospkg, rosnode,rosgraph
@@ -21,6 +22,20 @@ def getInitialStateFromOdom(robot_name = None):
 
     return p0.x, p0.y, yaw0
 
+def getInitialStateFromJoints(robot_name = None, joint_names = None):
+    try:
+        msg = ros.wait_for_message("/" + robot_name + "/joint_states", JointState, timeout=10.0)
+    except ros.ROSException:
+        ros.logerr(f"Timed out waiting for /{robot_name}/odom")
+        return
+    n_joints = len(msg.name)
+    q0 = np.zeros(n_joints)
+    for msg_idx in range(n_joints):
+        for joint_idx in range(len(joint_names)):
+            if joint_names[joint_idx] == msg.name[msg_idx]:
+                q0[joint_idx] = msg.position[msg_idx]
+    print(colored(f"{robot_name}: Init. desired joints state: q0: {q0}", "red"))
+    return q0
 
 def checkRosMaster():
     if rosgraph.is_master_online():  # Checks the master uri and results boolean (True or False)
