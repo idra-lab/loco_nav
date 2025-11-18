@@ -18,80 +18,11 @@ We strongly suggest to install a docker image to avoid  compatibility issues. To
 
 # **Installing Real Robot Code**
 
-1. connect both LIMO and HOSTCOMPUTER to the same WI-FI
-2. add to both HOSTCOMPUTER and LIMO /etc/hosts
-
-```
-$LIMO_IP limo
-$HOST_COMPUTER_IP hostcomputer
-```
-
-3. add to  HOSTCOMPUTER $HOME/trento_lab_home/.bashrc 
-
-```
-export ROS_IP=$HOST_COMPUTER_IP
-```
-
-4. add these aliases to HOSTCOMPUTER $HOME/.bashrc
-
-```
-alias connect_limo_nodocker='ssh -X -t agilex@limo'
-alias connect_limo='ssh -X -t agilex@limo "bash -ic \"lab\" "'
-alias attach_limo='ssh -X -t agilex@limo "bash -ic \"dock-other\" "'
-```
-
-5. ROS TF requires all transforms to be within a **common clock**. If two machines disagree on the current time, TF will reject those transforms as “out of range”. Install and enable NTP or Chrony on both machines so they agree on the current time. Let's start to enable chrony on HOSTCOMPUTER for synchronization:
-
-```
-sudo apt install chrony
-sudo systemctl enable chrony
-sudo systemctl restart chrony (only once in life or just reboot)
-```
-
-6. copy docker file present in docker folder inside LIMO (pwd:agx)
-
-```
-cd $LOCONAV_FOLDER/docker_limo 
-scp Dockerfile agilex@limo:~/docker
-scp chrony.conf agilex@limo:~/docker
-```
-
-7. connect to LIMO robot computer
-
-```
-connect_limo_no_docker
-```
-
-8. compile docker inside LIMO
-
-```
-cd $HOME/docker
-docker build -t loconav_robot .
-```
-
-9. add these aliases inside LIMO $HOME/.bashrc
-
-```
-alias lab='xhost +local:docker; docker rm -f limo_docker || true; docker run --name limo_docker   --user $(id -u):$(id -g)  --workdir="/home/$USER" --volume="/etc/group:/etc/group:ro"   --volume="/etc/shadow:/etc/shadow:ro"  --volume="/etc/passwd:/etc/passwd:ro" --device=/dev/dri:/dev/dri  -e "QT_X11_NO_MITSHM=1" --network=host --hostname=docker -it  --device=/dev/ttyTHS1:/dev/ttyTHS1 --device=/dev/ttyUSB0:/dev/ydlidar   --volume "/tmp/.X11-unix:/tmp/.X11-unix:rw"  --env="XAUTHORITY=$XAUTHORITY" \
---volume="$XAUTHORITY:$XAUTHORITY:rw" --volume $HOME/trento_lab_home:$HOME --env=HOME --env=USER  --privileged  -e SHELL --env="DISPLAY=$DISPLAY" --shm-size 2g --rm  --entrypoint /bin/bash introrob'
-
-alias dock-other='docker exec -it limo_docker /bin/bash'
-alias dock-root='docker exec -it --user root limo_docker /bin/bash'
-```
-
-10. enable chrony on LIMO robot computer for synchronization:
-
-```
-sudo apt install chrony
-sudo systemctl enable chrony
-sudo systemctl restart chrony (only once in life or just reboot)
-```
+To install the code and prepare the setup to use the real robot follow these [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_real_robot.md).
 
 
 
-# **Running the Code**  
-
-
+# **Running the Code** in Simulation
 
 ### **Closed loop simulation**
 
@@ -197,7 +128,7 @@ roslaunch loco_planning labyrinth_amcl.launch sensors:=true
 
 
 
-### **Run on Real Robot**
+# **Running the Code on Real Robot**
 
 1. Run docker on LIMO canning this in a HOSTCOMPUTER terminal:
 
@@ -208,7 +139,7 @@ connect_limo
 2. In a new terminal in HOSTCOMPUTER start docker with the alias 
 
 ```
-lab
+lab_planning
 ```
 
 3. in the same terminal in HOSTCOMPUTER (inside docker) run the alias 
@@ -220,13 +151,15 @@ real_robot
 4. run (without lidar)
 
 ```
-roslaunch loco_planning labyrinth_gmapping real_robot:=true sensors:=false
+roslaunch limo_description start_robot.launch real_robot:=true
 ```
 
-5. run (with lidar)
+5. setting these flags is possible to set:
 
 ```
-roslaunch loco_planning labyrinth_gmapping real_robot:=true sensors:=true
+odometry:=false => use optitrack node
+sensors:=true => activate LIDAR
+teleop_contro => start a teleop_keyboard node to issue velocity commands
 ```
 
 N.B. if you want to switch back to sim run the alias **sim**
