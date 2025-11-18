@@ -5,7 +5,7 @@
   <arg name="real_robot" default="false" />
   <arg name="robot_name" default="limo0" />
   <arg name="odometry" default="true" />   <!-- if false uses OptiTrack-->
-  <arg name="sensors" default="false" />    <!--if true it starts lidar -->
+  <arg name="sensors" default="true" />    <!--if true it starts lidar -->
   <arg name="teleop_control" default="false" />
   <arg name="robot_id" value="0" />
 

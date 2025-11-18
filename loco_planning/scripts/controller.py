@@ -66,7 +66,7 @@ class Controller():
         self.des_theta = yaw0
 
         vel_gen = VelocityGenerator(simulation_time=10., DT=conf.robot_params[self.robot_name]['dt'])
-        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_mir_smooth(v_max_=0.4, omega_max_=0.1)
+        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_chicane(v_max_=0.4, omega_max_=0.1)
         self.trajectory = Trajectory(ModelsList.UNICYCLE, self.des_x, self.des_y, self.des_theta, DT=conf.robot_params[self.robot_name]['dt'],
                                v=v_ol, omega=omega_ol, v_dot=v_dot_ol, omega_dot=omega_dot_ol)
 
