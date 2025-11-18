@@ -48,14 +48,15 @@ $ gedit ~/.bashrc
 alias lab_planning='xhost +local:root; docker rm -f docker_container || true; \
 docker run --name docker_container --gpus all \
 --workdir="/root" \
---volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+--volume $HOME/.ssh:/root/.ssh \
+--device=/dev/ttyUSB0:/dev/ttyUSB0 \
 --device=/dev/dri:/dev/dri \
---network=host --hostname=docker -it \
 --env="DISPLAY=$DISPLAY" \
---env="LIMO_IP=$LIMO_IP" \
 --env="QT_X11_NO_MITSHM=1" \
+--network=host --hostname=docker -it \
+--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
 --privileged --shm-size 2g --rm \
---volume $HOME/trento_lab_home:/root \
+--volume $HOME/trento_lab_home_loconav:/root \
 mfocchi/trento_lab_framework:loco_nav'
 alias dock-other='docker exec -it docker_container /bin/bash'
 ```
