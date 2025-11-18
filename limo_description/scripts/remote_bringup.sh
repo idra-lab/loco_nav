@@ -18,8 +18,9 @@ DOCKER_HOME=$(ssh agilex@limo "docker exec limo_docker bash -lc 'echo \$HOME'")
 
 echo "to avoid entering the pwd, firt time type ssh-copy-id agilex@limo"
 
-echo "[INFO] Namespace: $NS"
-echo "[INFO] Laser enabled: $LASER"
+echo "[INFO] Namespace: ${NS}"
+echo "[INFO] Laser enabled: ${LASER}"
+echo "[INFO] Odometry: ${ODOMETRY}"
 
 # Pre-check: ensure /dev/ttyTHS1 exists inside the limo_docker container
 echo "[INFO] Checking /dev/ttyTHS1 inside limo_docker..."
