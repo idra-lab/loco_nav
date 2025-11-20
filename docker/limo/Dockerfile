@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install --no-cache-dir pylimo pyclipper
 
 # utils
-RUN apt-get install -y iputils-ping gedit 
+RUN apt-get install -y iputils-ping gedit  net-tools
 
 
 

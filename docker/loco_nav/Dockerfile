@@ -79,6 +79,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends  \
 		 gedit\
 		 gitg\
 		 git-cola\
+		 iputils-ping  \
+		 net-tools \
 		 libfcl-dev libxext6 libxrender1 libxtst6 libxi6 libfreetype6 fonts-dejavu \ 
 		 libgl1-mesa-glx libgtk-3-0 
  

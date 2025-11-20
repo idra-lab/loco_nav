@@ -198,7 +198,7 @@ def solve_orienteering_pulp(V, E, victims, scores, start, end, Dmax):
     key_nodes = [start] + victims + [end]
     N = len(key_nodes)
 
-    # ---- Precompute shortest-path distances ----
+    # ---- Precompute shortest-path distances between key nodes----
     sp_dist = {n: dijkstra(n, V, E)[0] for n in key_nodes}
     dist = {}
     for i in key_nodes:
