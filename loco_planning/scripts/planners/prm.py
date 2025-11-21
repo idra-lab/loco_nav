@@ -68,6 +68,17 @@ class PRM:
         sorted_idx = np.argsort(dlist)
         return [nodes[i] for i in sorted_idx[:k]]
 
+    '''
+        V = list of node coordinates indexed as V[0], V[1], ..., V[N-1]
+       ️ E = adjacency with coordinates
+        
+        Example: 
+        V = [(x0,y0), (x1,y1), ...]
+        E = {
+           (x0,y0): [(x1,y1), (x2,y2), ...],
+           (x1,y1): [(x0,y0), (x3,y3), ...],
+        }
+    '''
     def construct_roadmap(self, map):
         rows, cols = map.shape
         width = cols * self.resolution
@@ -97,6 +108,64 @@ class PRM:
             plt.scatter( q[0], q[1],  color="black", s=10, zorder=4, alpha=0.5)
             for qn in E[q]:
                 plt.plot( [q[0], qn[0]],[q[1], qn[1]], "-g", linewidth=0.5, alpha=0.5)
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.pause(0.001)
+
+        return V, E
+
+    '''
+        V = list of node coordinates indexed as V[0], V[1], ..., V[N-1]
+       ️ E = index-based adjacency: list of edges [(i,j), ...] where i,j are indices in V
+        
+        Example:
+        V = [(x0,y0), (x1,y1), ...]
+        E = {
+           0: [3, 5, 9],
+           1: [2, 11],
+           2: [1, 7],
+        }
+    '''
+    def construct_roadmap_index(self, map):
+        rows, cols = map.shape
+        width = cols * self.resolution
+        height = rows * self.resolution
+
+        plt.imshow(map, cmap='gray_r', origin='lower', extent=[0, width, 0, height])
+
+        # --- 1. Sample free configurations ---
+        V = []  # list of coordinates (x, y)
+        for i in range(self.n_samples):
+            q = self.sample_free(map, width, height)
+            V.append(q)
+
+        # Build index mapping: coordinate -> index
+        # This ensures that V[0] ... V[n] are node IDs
+        idx = {tuple(V[i]): i for i in range(len(V))}
+
+        # --- 2. Build adjacency list using indices ---
+        E = {i: [] for i in range(len(V))}
+
+        for i, q in enumerate(V):
+            neighbors = self.find_k_nearest(V, q, self.k)
+            for qn in neighbors:
+                if qn == q:
+                    continue
+
+                j = idx[tuple(qn)]
+
+                # Check valid index and collision-free edge
+                if j not in E[i] and self.is_collision_free(q, qn, map):
+                    E[i].append(j)
+                    E[j].append(i)
+
+        # --- 3. Plot roadmap ---
+        for i, q in enumerate(V):
+            plt.scatter(q[0], q[1], color="black", s=10, zorder=4, alpha=0.5)
+            for j in E[i]:
+                qn = V[j]
+                plt.plot([q[0], qn[0]], [q[1], qn[1]], "-g", linewidth=0.5, alpha=0.5)
+
         plt.xlabel("X")
         plt.ylabel("Y")
         plt.pause(0.001)
