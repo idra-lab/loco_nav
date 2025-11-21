@@ -20,26 +20,18 @@ $ cd ~/trento_lab_home/ros_ws/src
 $ git clone https://github.com/idra-lab/loco_nav.git
 ```
 
-- Now you have two options: 
-
-  A) Download the docker image from here:	
-
-  ```
-  docker pull mfocchi/trento_lab_framework:loco_nav
-  ```
-
-  B) compile the docker image yourself:
+- Now you should compile the docker image yourself for ARM:
 
   ```
   cd ~/trento_lab_home/ros_ws/src/loco_nav/docker/loco_nav
-  docker build -t mfocchi/trento_lab_framework:loco_nav -f Dockerfile .
+  docker build --platform linux/arm64  -t mfocchi/trento_lab_framework:loco_nav -f Dockerfile .
   ```
-
-- Now, you need to configure the bash environment of your Ubuntu machine as follows. Open the `bashrc` file from your home folder:
+  
+- Now, you need to configure the bash environment of your Ubuntu machine as follows. Open the `.zshrc` file from your home folder:
 
 
 ```
-$ gedit ~/.bashrc
+$ gedit ~/.zshrc 
 ```
 
 - and add the following lines at the bottom of the file:
@@ -61,11 +53,11 @@ mfocchi/trento_lab_framework:loco_nav'
 alias dock-other='docker exec -it docker_container /bin/bash'
 ```
 
-- Load the .bashrc script (next time you will open a terminal this will be automatically loaded).
+- Load the .zshrc script (next time you will open a terminal this will be automatically loaded).
 
 
 ```
-$ source ~/.bashrc
+$ source ~/.zshrc 
 ```
 
 **NOTE!** If you do not have an Nvidia card in your computer, you should skip the parts about the installation of the drivers, and you can still run the docker **without** the **--gpus all**  in the **lab** alias.
@@ -97,48 +89,6 @@ $ source /root/ros_ws/install/setup.bash
 ```
 
 
-Installing NVIDIA drivers (optional)
---------------
-
-If your PC is provided with an NVIDIA graphics card, you can install its drivers in Ubuntu by following these steps:
-
-add the repository
-
-```
-sudo add-apt-repository ppa:graphics-drivers/ppa
-```
-
-update the repository list:
-
-```
-sudo apt-get update
-```
-
-Install the driver, note that for Ubuntu 20.04 the 515 version is ok, for Ubuntu 22.04 the 535 is ok, but you can use also other versions:
-
-```
-sudo apt-get install nvidia-driver-X
-```
-
-The reboot the system
-
-```
-sudo reboot
-```
-
-Now tell the system to use that driver:
-
-* open the _Software & Updates_ application
-* go to "Additional Drivers" and select the latest driver you just installed with "proprietary, tested" description
-* press on "Apply Changes".
-
-You can verify if the drivers are installed by opening a terminal and running:
-
-```
-nvidia-smi
-```
-
-If this does not work, and you are sure you correctly installed the drivers, you might need to deactivate the "safe boot" feature from your BIOS, that usually prevents to load the driver. 
 
 
 

@@ -12,7 +12,13 @@ for the course of Robot Planning and applications.
 
 # Installing Loco_nav code
 
-We strongly suggest to install a docker image to avoid  compatibility issues. To see how to install the docker image follow these [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_docker.md) for Linux users and these  [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_docker_windows.md) for Windows users.
+We strongly suggest to install a docker image to avoid  compatibility issues. To see how to install the docker image follow:
+
+LINUX:  these [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_docker_linux.md).
+
+MAC: these  [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_docker_mac.md).
+
+WINDOWS: these  [instructions](https://github.com/mfocchi/loco_nav/tree/master/install_docker_windows.md).
 
 
 
