@@ -33,10 +33,19 @@ class PursuitEvasionGame:
         self.use_alpha_beta = use_alpha_beta
         # transposition table: (p_idx, e_idx, player, depth) -> (value, best_action)
         self.cache = {}
+        self.expanded_nodes = 0
 
     def is_terminal(self, p_idx, e_idx, depth_left):
-        if p_idx == e_idx:
-            return True
+        #pursuer catches evader (perfect condition)
+        # if p_idx == e_idx:
+        #     return True
+        # pursuer catches evader (catch condition)
+        p_pos = self.V[p_idx]
+        e_pos = self.V[e_idx]
+        # Catch if within distance threshold
+        if np.linalg.norm(p_pos - e_pos) < 0.3:
+            return True  # pursuer wins
+
         if e_idx == self.gate_idx:
             return True
         if depth_left == 0:
@@ -49,9 +58,17 @@ class PursuitEvasionGame:
            -1: evader wins (reaches gate)
             heuristic: depth cutoff (non-terminal)
            """
-        # Terminal: pursuer catches evader
-        if p_idx == e_idx:
-            return 1.0
+        # Terminal: pursuer catches evader (perfect condition)
+        # if p_idx == e_idx:
+        #     return 1.0
+
+        # Terminal: pursuer catches evader (catch condition)
+        p_pos = self.V[p_idx]
+        e_pos = self.V[e_idx]
+        # Catch condition
+        if np.linalg.norm(p_pos - e_pos) < 0.2:
+            return 1.0  # pursuer wins
+
         # Terminal: evader reaches gate
         if e_idx == self.gate_idx:
             return -1.0
@@ -77,7 +94,8 @@ class PursuitEvasionGame:
 
         return action, value
 
-    def max_value(self, p_idx, e_idx, depth_left):
+    def max_value(self, p_idx, e_idx, depth_left, alpha = -math.inf, beta=math.inf):
+        self.expanded_nodes += 1
         key = (p_idx, e_idx, 'P', depth_left)
         if key in self.cache:
             return self.cache[key]
@@ -91,15 +109,21 @@ class PursuitEvasionGame:
         best_action = None
 
         for p_next in self.adj[p_idx]:
-            v2, _ = self.min_value(p_next, e_idx, depth_left - 1)
+            v2, _ = self.min_value(p_next, e_idx, depth_left - 1, alpha, beta)
             if v2 > v:
                 v = v2
                 best_action = p_next
 
+            if self.use_alpha_beta:
+                alpha = max(alpha, v)
+                if beta <= alpha:
+                    break  # prune
+
         self.cache[key] = (v, best_action)
         return v, best_action
 
-    def min_value(self, p_idx, e_idx, depth_left):
+    def min_value(self, p_idx, e_idx, depth_left, alpha = -math.inf, beta=math.inf):
+        self.expanded_nodes += 1
         key = (p_idx, e_idx, 'E', depth_left)
         if key in self.cache:
             return self.cache[key]
@@ -113,10 +137,15 @@ class PursuitEvasionGame:
         best_action = None
 
         for e_next in self.adj[e_idx]:
-            v2, _ = self.max_value(p_idx, e_next, depth_left - 1)
+            v2, _ = self.max_value(p_idx, e_next, depth_left - 1, alpha, beta)
             if v2 < v:
                 v = v2
                 best_action = e_next
+
+            if self.use_alpha_beta:
+                beta = min(beta, v)
+                if beta <= alpha:
+                    break  # prune
 
         self.cache[key] = (v, best_action)
         return v, best_action
@@ -154,7 +183,7 @@ def set_obstacle(center, size, resolution, map):
     map[row_min:row_max, col_min:col_max] = 1
     return map
 
-def solve_minmax( V, E, gate, p_start_world, e_start_world, max_depth=10):
+def solve_minmax( V, E, gate, p_start_world, e_start_world, max_depth=10, use_alpha_beta=False):
     """
     V, E: roadmap (from PRM)
     gate: (x, y) of gate in world coords
@@ -170,7 +199,7 @@ def solve_minmax( V, E, gate, p_start_world, e_start_world, max_depth=10):
     p_idx = nearest_node(V, p_start_world)
     e_idx = nearest_node(V, e_start_world)
 
-    game = PursuitEvasionGame(V, E, gate_idx, max_depth=max_depth)
+    game = PursuitEvasionGame(V, E, gate_idx, max_depth=max_depth, use_alpha_beta=use_alpha_beta)
 
     p_path = [p_idx]
     e_path = [e_idx]
@@ -198,16 +227,28 @@ def solve_minmax( V, E, gate, p_start_world, e_start_world, max_depth=10):
         depth_left -= 1
 
     # Determine winner from final state
-    final_util = game.utility(p_idx, e_idx, depth_left)
-    if final_util > 0:
-        winner = 'P'
-    elif final_util < 0:
-        winner = 'E'
-    else:
-        winner = 'Draw'
+    winner, final_util, reason = determine_winner(np.array(V), gate_idx, p_idx, e_idx, depth_left)
 
-    return p_path, e_path, winner, final_util, gate_idx
+    return p_path, e_path, winner, final_util, gate_idx, game.expanded_nodes, reason
 
+def determine_winner(V, gate_idx, p_idx, e_idx, depth_left, capture_radius=0.2):
+    p_pos = V[p_idx]
+    e_pos = V[e_idx]
+
+    # 1. Pursuer catches evader?
+    if np.linalg.norm(p_pos - e_pos) < capture_radius:
+        return 'P', 1.0, "Pursuer caught the evader"
+
+    # 2. Evader reaches gate?
+    if e_idx == gate_idx:
+        return 'E', -1.0, "Evader reached the gate"
+
+    # 3. Depth limit or stalemate → draw
+    if depth_left == 0:
+        return 'Draw', 0.0, "Depth limit reached (no terminal event)"
+
+    # Fallback (shouldn't happen)
+    return 'Draw', 0.0, "Undefined condition"
 
 
 
@@ -220,7 +261,7 @@ This uses:
     - Gate node (red)
 '''
 def visualize(map, resolution, V, E, p_path_idx, e_path_idx, gate_idx,
-              map_width=10., map_height=10.):
+              map_width=10., map_height=10., winner=None):
 
     # Plot roadmap edges (light)
     # for i, nbrs in E.items():
@@ -248,6 +289,18 @@ def visualize(map, resolution, V, E, p_path_idx, e_path_idx, gate_idx,
     # Plot paths evader
     plt.plot(e_path[:, 0], e_path[:, 1], color="red", linewidth=3)
     plt.scatter(e_path[0, 0], e_path[0, 1], s=80, color="red", marker='s')  # evader start
+
+    # --- Final event marker ---
+    p_final = V[p_path_idx[-1]]
+    e_final = V[e_path_idx[-1]]
+    if winner == 'P':  # pursuer caught evader
+        # mark capture location
+        plt.scatter([e_final[0]], [e_final[1]], s=250, color="green", edgecolor='black', marker='X', label="Capture")
+    elif winner == 'E':  # evader reached gate
+        gx, gy = V[gate_idx]
+        plt.scatter([gx], [gy], s=250, color="yellow", edgecolor='black', marker='*', label="Escape")
+    else:  # draw
+        plt.scatter([e_final[0]], [e_final[1]], s=200, color="gray", edgecolor='black', marker='o', label="Draw end")
 
     plt.xlim(0, map_width)
     plt.ylim(0, map_height)
@@ -339,28 +392,29 @@ if __name__ == '__main__':
     gate = (5, 0)
 
     # Build roadmap
-    prm = PRM(n_samples=300, k=10, resolution=resolution, seed=0)
+    prm = PRM(n_samples=100, k=10, resolution=resolution, seed=0)
     V, E = prm.construct_roadmap_index(map)
 
     # Example start positions in world coordinates
-    # evader  closer to gate than pursuer
-    # p_start_world = (1, 1)  # pursuer
-    # e_start_world = (9, 1)  # evader
-    #
     # pursuer closer to gate than evader
     p_start_world = (4, 2)  # pursuer
     e_start_world = (1, 1)  # evader
 
+    # evader closer to gate than pursuer
+    # p_start_world = (1, 1) # pursuer
+    # e_start_world =  (6, 2)  # evader
+
     # simulate a game where both robots play optimally (minimax each turn).
-    p_path_idx, e_path_idx, winner, value, gate_idx = solve_minmax( V, E, gate,
+    p_path_idx, e_path_idx, winner, final_util, gate_idx, expanded_nodes, reason = solve_minmax( V, E, gate,
         p_start_world=p_start_world,
         e_start_world=e_start_world,
-        max_depth=100
+        max_depth=100,
+        use_alpha_beta= False
     )
-
-    print("Winner:", winner,  "| utility:", value)
+    print("Nodes expanded:", expanded_nodes)
+    print(f"Winner: {winner} | utility: {final_util:.2f} | reason: {reason}")
     visualize(map, resolution, V, E, p_path_idx, e_path_idx, gate_idx,
-              map_width=map_width, map_height=map_height)
+              map_width=map_width, map_height=map_height, winner=winner)
 
     # Play 1-second-per-step animation
     animate_pursuit(
