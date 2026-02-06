@@ -167,8 +167,8 @@ class Controller():
         self.basePoseW[5] = self.euler[2]
         #
         self.baseTwistW[0] = msg.twist.twist.linear.x
-        self.baseTwistW[0] = msg.twist.twist.linear.y
-        self.baseTwistW[0] = msg.twist.twist.linear.z
+        self.baseTwistW[1] = msg.twist.twist.linear.y
+        self.baseTwistW[2] = msg.twist.twist.linear.z
         self.baseTwistW[3] = msg.twist.twist.angular.x
         self.baseTwistW[4] = msg.twist.twist.angular.y
         self.baseTwistW[5] = msg.twist.twist.angular.z
