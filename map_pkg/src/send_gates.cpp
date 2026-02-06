@@ -140,10 +140,8 @@ int main(int argc, char* argv[])
       if (!node.activate()) { ROS_FATAL("Gate publish failed.");
         return 1;
       }
+      ros::spinOnce();          // handle callbacks if you ever add any
     rate.sleep();
   }
-
-  // Keep the node alive so latched topic is available to late subscribers
-  ros::spin();
   return 0;
 }

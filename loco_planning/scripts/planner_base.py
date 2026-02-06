@@ -282,9 +282,9 @@ class PlannerBase:
         rospy.sleep(6.)
 # ---------- Main ----------
 if __name__ == "__main__":
-    planner = PlannerBase(robot_radius=0.2, v_max=0.3, curvature_max=3., robot_name="limo0", debug=False)
+    planner = PlannerBase(robot_radius=0.2, v_max=0.3, curvature_max=1/0.35, robot_name="limo0", debug=False)
     # to test RRT /RRTStar planner.ros_init(start_simulation=True, regenerate_map=False)
-    planner.ros_init(start_simulation=True, regenerate_map=True)
+    planner.ros_init(start_simulation=True, regenerate_map=False)
     while not rospy.is_shutdown():
         # be sure you have received all messages
         if not planner.computed_path and planner.goal_ready and planner.map_ready and planner.map_ready:
