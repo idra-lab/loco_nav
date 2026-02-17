@@ -118,6 +118,8 @@ roslaunch loco_planning labyrinth_amcl.launch sensors:=true
 
 # Running the code on the real robot
 
+Be sure you have setup the hostcomputer and the LIMO robot computer appropriately following these [instructions](https://https://github.com/idra-lab/loco_nav/blob/master/install_real_robot.md). 
+
 1. Run docker on LIMO canning this in a HOSTCOMPUTER terminal:
 
 ```
@@ -152,13 +154,37 @@ teleop_control:=true => start a teleop_keyboard node to issue velocity commands
 
 N.B. if you want to switch back to sim run the alias **sim**
 
-6. To test a chicane trajectory run the code:
+6. To test a predefined chicane trajectory run the code:
 
 ```
 python3 -i limo_control.py
 ```
 
-you can use this code both for simulation and real robot, just set the parameter real_robot: False/True in **params.yaml**. If you use limo_control.py he will take care of calling the alias real_robot and sim autonomatically, you do not have to do it.
+you can use this code both for simulation and real robot, just set the parameter real_robot: False/True in **params.yaml**. If you use limo_control.py he will take care of calling the alias real_robot and sim automatically, you do not have to do it.
+
+7. to acquire a map with the real robot run
+
+```
+roslaunch limo_description start_robot.launch real_robot:=true sensors:=true mapping:=true teleop_control:=true
+```
+
+8. move around the robot till you acquired the whole map then save with 
+
+```
+rosrun map_pkg save_map.py real_arena
+```
+
+this will save in ros_ws/install/share/map_pkg/maps/real_arena.yaml 
+
+9. To use the acquired map just run 
+
+```
+roslaunch limo_description start_robot.launch real_robot:=true sensors:=true
+```
+
+this will publish the discretized map as points in the topic /obstacles that you can use for your planner.
+
+
 
 # Pycharm IDE
 

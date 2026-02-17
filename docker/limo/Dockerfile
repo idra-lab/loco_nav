@@ -94,7 +94,8 @@ RUN sed -i 's/^_TIMEOUT_SIGINT = .*/_TIMEOUT_SIGINT = 0.1/' \
 # /etc/bash.bashrc is sourced by all interactive shells, regardless of which user you start as so I copy env there
 RUN echo "source /opt/ros/noetic/setup.bash" >> /etc/bash.bashrc && \
     echo "[ -f \$HOME/ros_ws/devel/setup.bash ] && source \$HOME/ros_ws/devel/setup.bash" >> /etc/bash.bashrc && \
-    echo "export ROS_MASTER_URI=http://hostcomputer:11311" >> /etc/bash.bashrc && \
+    echo 'export HOSTCOMPUTER_IP=$(grep hostcomputer /etc/hosts | awk '\''{print $1}'\'')' >> /etc/bash.bashrc && \
+    echo 'export ROS_MASTER_URI=http://$HOSTCOMPUTER_IP:11311' >> /etc/bash.bashrc && \
     echo 'export ROS_IP=$(ip route get 1 | awk '/src/ {print $7; exit}')' >> /etc/bash.bashrc
     
 

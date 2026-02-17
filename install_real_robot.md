@@ -61,4 +61,11 @@ alias dock-other='docker exec -it limo_docker /bin/bash'
 alias dock-root='docker exec -it --user root limo_docker /bin/bash'
 ```
 
-10. To run the code following these [instructions](https://github.com/idra-lab/loco_nav?tab=readme-ov-file#running-the-code-on-the-real-robot). 
+10. to avoid entering the password (agx), type:
+
+```
+ssh-keygen
+ssh-copy-id agilex@limo
+```
+
+11. To run the code following these [instructions](https://github.com/idra-lab/loco_nav?tab=readme-ov-file#running-the-code-on-the-real-robot). 
