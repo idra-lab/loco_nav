@@ -147,7 +147,7 @@ roslaunch limo_description start_robot.launch real_robot:=true
 ```
 odometry:=false => use optitrack node
 sensors:=true => activate LIDAR
-teleop_contro => start a teleop_keyboard node to issue velocity commands
+teleop_control:=true => start a teleop_keyboard node to issue velocity commands
 ```
 
 N.B. if you want to switch back to sim run the alias **sim**
