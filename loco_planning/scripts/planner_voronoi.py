@@ -46,7 +46,7 @@ class VoronoiPlanner(PlannerBase):
 # ---------- Main ----------
 if __name__ == "__main__":
     planner = VoronoiPlanner(robot_radius=0.2, v_max=0.3, curvature_max=10., robot_name="limo0", debug=False)
-    planner.ros_init(start_simulation=True, launch_file="labyrinth.launch")
+    planner.ros_init(start_simulation=True, launch_file="labyrinth_amcl.launch")
 
     #to test launch if start_simulation=False: roslaunch loco_planning labyrinth.launch start_controller:=true
     # this will publish everything as obstacles discretized (i.e. no map_borders)

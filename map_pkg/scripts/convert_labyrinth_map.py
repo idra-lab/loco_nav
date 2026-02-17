@@ -30,7 +30,7 @@ class MapToObstacles:
         # Occupied cells (>=50 considered obstacle)
         occupied = np.uint8((data > 50) * 255)
         # Find contours (obstacles)
-        contours, _ = cv2.findContours(occupied, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours, _ = cv2.findContours(occupied, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
         #debug
         #plt.imshow(occupied, cmap="gray")
@@ -138,7 +138,7 @@ class MapToObstacles:
 
 if __name__ == "__main__":
     try:
-        p = MapToObstacles(step_m=0.2)
+        p = MapToObstacles(step_m=0.05)
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
