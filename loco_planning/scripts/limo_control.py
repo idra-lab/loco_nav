@@ -43,7 +43,7 @@ class GenericSimulator(threading.Thread):
         # user config
         self.ControlType = 'CLOSED_LOOP' #'OPEN_LOOP' 'CLOSED_LOOP_UNICYCLE' 'CLOSED_LOOP_SLIP_0' 'CLOSED_LOOP_SLIP'
         self.ODOMETRY = 'true' #'true',  'false' (optitrack node)
-        self.SENSORS = 'false' #'true',  'false' (lidar)
+        self.SENSORS = 'true' #'true',  'false' (lidar)
         # initial pose to spawn (sim)
         self.p0 = np.array([0., 0., 0.])
         self.SAVE_BAGS = False
@@ -153,6 +153,11 @@ class GenericSimulator(threading.Thread):
 
     def startFramework(self):
         if self.real_robot:
+            user = os.popen('whoami').read().strip()
+            if user != 'root':
+                print(colored("HOSTCOMPUTER DOCKER USER SHOULD BE  ROOT to run on real robot", "red"))
+                sys.exit()
+            print(colored("BE SURE LATCHES ARE DOWN AN LIGHT ARE NOT GREEN TO BE IN DIFFERENTIAL MODE", "red"))
             # 1) Set ROS_IP using the HOSTCOMPUTER environment variable
             host = os.environ.get("HOSTCOMPUTER_IP")
             if host is None:
