@@ -13,8 +13,12 @@ import math
 
 
 class MapToObstacles:
-    def __init__(self, step_m):
+    def __init__(self):
         rospy.init_node("map_to_polygons")
+
+        # Get parameter from launch file (default = 0.05 if not provided)
+        step_m = rospy.get_param("~discretization_resolution", 0.05)
+
         #Node subscribes to /map
         self.map_sub = rospy.Subscriber("/map", OccupancyGrid, self.map_callback)
         #latch publish only once and keep it alive
@@ -138,7 +142,9 @@ class MapToObstacles:
 
 if __name__ == "__main__":
     try:
-        p = MapToObstacles(step_m=0.05)
+        p = MapToObstacles()
+
         rospy.spin()
+
     except rospy.ROSInterruptException:
         pass

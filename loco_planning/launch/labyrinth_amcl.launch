@@ -13,7 +13,10 @@
 	<arg name="spawn_z" default="0.2" />
 	<arg name="spawn_Y" default="0.0" />
 
-	<arg name="start_controller" value="true" />
+	
+	<arg name="start_controller" default="true" />
+
+	<arg name="discretization_resolution" default="0.05" />
 
 	<arg name="robot_id" value="0" />
 
@@ -72,8 +75,15 @@
 	</group>
 
 
-	<!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS and publish them-->
-	<node pkg="map_pkg" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen" />
+<!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS -->
+<node pkg="map_pkg"
+      type="convert_labyrinth_map.py"
+      name="map_extract_contours_into_obstacles"
+      output="screen">
+
+     <param name="discretization_resolution" value="$(arg discretization_resolution)" />
+
+</node>
 
 	<!-- RViz (optional) -->
 	<node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)"

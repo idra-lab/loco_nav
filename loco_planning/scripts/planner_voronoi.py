@@ -32,7 +32,7 @@ class VoronoiPlanner(PlannerBase):
             for p in obstacle.polygon.points:
                 self.obstacle_list.append([p.x, p.y])
         self.obstacles_ready = True
-        rospy.loginfo(f"Added {len(self.obstacle_list)} point obstacles")
+        rospy.loginfo(f"Added {len(self.obstacle_list)} point obstacles, WAIT while constructing voronoi graph!")
 
 
     # override callback
@@ -46,7 +46,7 @@ class VoronoiPlanner(PlannerBase):
 # ---------- Main ----------
 if __name__ == "__main__":
     planner = VoronoiPlanner(robot_radius=0.2, v_max=0.3, curvature_max=10., robot_name="limo0", debug=False)
-    planner.ros_init(start_simulation=True, launch_file="labyrinth_amcl.launch")
+    planner.ros_init(start_simulation=True, launch_file="labyrinth_amcl.launch", custom_args=["discretization_resolution:=0.01"])
 
     #to test launch if start_simulation=False: roslaunch loco_planning labyrinth.launch start_controller:=true
     # this will publish everything as obstacles discretized (i.e. no map_borders)
