@@ -21,7 +21,14 @@ catkin_package(
 
 catkin_install_python(
   PROGRAMS
-    scripts/params.py  
+
+    scripts/params.py
+    scripts/test_nunez_pillar_detector_node.py
+    scripts/test_landmark_slam_ukf_node3.py
+    scripts/slam_logs_analysis.py
+
+
+
     # Controllers  
     scripts/controller.py
     scripts/spawn_controllers.py
@@ -55,6 +62,7 @@ install(DIRECTORY scripts/controllers
 install(DIRECTORY scripts/planners
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   PATTERN ".svn" EXCLUDE)
+
   
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch

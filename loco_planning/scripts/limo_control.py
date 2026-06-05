@@ -8,8 +8,9 @@ from __future__ import print_function
 import rospy as ros
 from utils.math_tools import unwrap_angle
 import numpy as np
-np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
-from  utils.common_functions import plotFrameLinear
+
+np.set_printoptions(threshold=np.inf, precision=5, linewidth=1000, suppress=True)
+from utils.common_functions import plotFrameLinear
 import params as conf
 import os
 import rospkg
@@ -26,9 +27,24 @@ from sensor_msgs.msg import JointState
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from utils.math_tools import euler_from_quaternion, unwrap_vector, Math
-from utils.communication_utils import getInitialStateFromOdom, getInitialStateFromJoints
-robotName = "limo0" # needs to inherit BaseController
+from utils.communication_utils import getInitialStateFromOdom, getInitialStateFromJoints, launchFileNode
+
+robotName = "limo0"  # needs to inherit BaseController
 import roslaunch
+
+###########################################
+import tf
+from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Float64
+from geometry_msgs.msg import PoseStamped, PointStamped
+from visualization_msgs.msg import Marker, MarkerArray
+from sklearn.cluster import DBSCAN
+from scipy.optimize import linear_sum_assignment
+
+
+# from utils.FilterAndPolar2xy_LidarData import filterAndPolar2XY_LidarData
+############################################
+
 
 class GenericSimulator(threading.Thread):
     def __init__(self, robot_name="limo0"):
@@ -41,18 +57,27 @@ class GenericSimulator(threading.Thread):
         self.torque_control = False
 
         # user config
-        self.ControlType = 'CLOSED_LOOP' #'OPEN_LOOP' 'CLOSED_LOOP_UNICYCLE' 'CLOSED_LOOP_SLIP_0' 'CLOSED_LOOP_SLIP'
-        self.ODOMETRY = 'true' #'true',  'false' (optitrack node)
-        self.SENSORS = 'true' #'true',  'false' (lidar)
+        self.ControlType = 'CLOSED_LOOP'  # 'OPEN_LOOP' 'CLOSED_LOOP_UNICYCLE' 'CLOSED_LOOP_SLIP_0' 'CLOSED_LOOP_SLIP'
+        self.ODOMETRY = 'true'  # 'true',  'false' (optitrack node)
+        self.SENSORS = 'true'  # 'true',  'false' (lidar)
         # initial pose to spawn (sim)
         self.p0 = np.array([0., 0., 0.])
         self.SAVE_BAGS = False
+
+        #################################
+        self.trilateration = False
+        ################################
+        #################################
+        # UKF-SLAM launch
+        #################################
+        self.launch_ukf_slam = True
+        self.ukf_slam_launch_file = "ukf_slam.launch"
 
     def initVars(self):
         self.basePoseW = np.zeros(6)
         self.baseTwistW = np.zeros(6)
         self.comPoseW = np.zeros(6)
-        self.comTwistsW = np.zeros(6) 
+        self.comTwistsW = np.zeros(6)
         self.q = np.zeros(4)
         p.q_old = np.zeros(4)
         self.qd = np.zeros(4)
@@ -88,23 +113,23 @@ class GenericSimulator(threading.Thread):
         self.ctrl_omega = 0.0
         self.v_d = 0.
         self.omega_d = 0.
-        self.V= 0.
+        self.V = 0.
         self.V_dot = 0.
 
         self.q_des_q0 = np.zeros(4)
-        self.ctrl_v_log = np.empty((conf.robot_params[self.robot_name]['buffer_size']))* nan
-        self.ctrl_omega_log = np.empty((conf.robot_params[self.robot_name]['buffer_size']))* nan
-        self.v_d_log = np.empty((conf.robot_params[self.robot_name]['buffer_size']))* nan
-        self.omega_d_log = np.empty((conf.robot_params[self.robot_name]['buffer_size']))* nan
-        self.V_log = np.empty((conf.robot_params[self.robot_name]['buffer_size']))* nan
-        self.V_dot_log = np.empty((conf.robot_params[self.robot_name]['buffer_size']))* nan
+        self.ctrl_v_log = np.empty((conf.robot_params[self.robot_name]['buffer_size'])) * nan
+        self.ctrl_omega_log = np.empty((conf.robot_params[self.robot_name]['buffer_size'])) * nan
+        self.v_d_log = np.empty((conf.robot_params[self.robot_name]['buffer_size'])) * nan
+        self.omega_d_log = np.empty((conf.robot_params[self.robot_name]['buffer_size'])) * nan
+        self.V_log = np.empty((conf.robot_params[self.robot_name]['buffer_size'])) * nan
+        self.V_dot_log = np.empty((conf.robot_params[self.robot_name]['buffer_size'])) * nan
         self.des_x = 0.
         self.des_y = 0.
         self.des_theta = 0.
-        self.beta_l= 0.
-        self.beta_r= 0.
-        self.alpha= 0.
-        self.alpha_control= 0.
+        self.beta_l = 0.
+        self.beta_r = 0.
+        self.alpha = 0.
+        self.alpha_control = 0.
         self.radius = 0.
         self.beta_l_control = 0.
         self.beta_r_control = 0.
@@ -115,41 +140,51 @@ class GenericSimulator(threading.Thread):
         self.b_base_vel = np.zeros(2)
         self.state_log = np.full((3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
         self.des_state_log = np.full((3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
-        self.basePoseW_des_log = np.full((6, conf.robot_params[self.robot_name]['buffer_size']),  np.nan)
-        self.b_base_vel_log = np.full((2, conf.robot_params[self.robot_name]['buffer_size']),  np.nan)
-        self.out_of_frequency_counter=0
+        self.basePoseW_des_log = np.full((6, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
+        self.b_base_vel_log = np.full((2, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
+        self.out_of_frequency_counter = 0
+
+        #################################
+        self.landmarks = []
+        self.landmark_ids = []
+        self.max_assoc_dist = 1.0
+
+        self.last_trilat = np.array([0.0, 0.0])
+        self.trilat_initialized = False
+        self.sigma_r = 0.05
+        self.R_scalar = self.sigma_r * self.sigma_r
+        self.tf_listener = tf.TransformListener()
 
     def logData(self):
-            if (self.log_counter<conf.robot_params[self.robot_name]['buffer_size'] ):
-                ## add your logs here
-                self.ctrl_v_log[self.log_counter] = self.ctrl_v
-                self.ctrl_omega_log[self.log_counter] = self.ctrl_omega
-                self.v_d_log[self.log_counter] = self.v_d
-                self.omega_d_log[self.log_counter] = self.omega_d
-                self.V_log[self.log_counter] = self.V
-                self.V_dot_log[self.log_counter] = self.V_dot
-                self.des_state_log[0, self.log_counter] = self.des_x
-                self.des_state_log[1, self.log_counter] = self.des_y
-                self.des_state_log[2, self.log_counter] = self.des_theta
-                self.state_log[0, self.log_counter] = self.basePoseW[0]
-                self.state_log[1, self.log_counter] = self.basePoseW[1]
-                self.state_log[2, self.log_counter] =  self.basePoseW[5]
+        if (self.log_counter < conf.robot_params[self.robot_name]['buffer_size']):
+            ## add your logs here
+            self.ctrl_v_log[self.log_counter] = self.ctrl_v
+            self.ctrl_omega_log[self.log_counter] = self.ctrl_omega
+            self.v_d_log[self.log_counter] = self.v_d
+            self.omega_d_log[self.log_counter] = self.omega_d
+            self.V_log[self.log_counter] = self.V
+            self.V_dot_log[self.log_counter] = self.V_dot
+            self.des_state_log[0, self.log_counter] = self.des_x
+            self.des_state_log[1, self.log_counter] = self.des_y
+            self.des_state_log[2, self.log_counter] = self.des_theta
+            self.state_log[0, self.log_counter] = self.basePoseW[0]
+            self.state_log[1, self.log_counter] = self.basePoseW[1]
+            self.state_log[2, self.log_counter] = self.basePoseW[5]
 
-                self.basePoseW_des_log[:, self.log_counter] = self.basePoseW_des #basepose is logged in base controller
-                self.b_base_vel_log[:, self.log_counter] = self.b_base_vel  # basepose is logged in base controller
+            self.basePoseW_des_log[:, self.log_counter] = self.basePoseW_des  # basepose is logged in base controller
+            self.b_base_vel_log[:, self.log_counter] = self.b_base_vel  # basepose is logged in base controller
 
-                self.basePoseW_log[:, self.log_counter] = self.basePoseW
-                self.baseTwistW_log[:, self.log_counter] = self.baseTwistW
-                self.q_des_log[:, self.log_counter] = self.q_des
-                self.q_log[:, self.log_counter] = self.q
-                self.qd_des_log[:, self.log_counter] = self.qd_des
-                self.qd_log[:, self.log_counter] = self.qd
-                self.tau_ffwd_log[:, self.log_counter] = self.tau_ffwd
-                self.tau_log[:, self.log_counter] = self.tau
+            self.basePoseW_log[:, self.log_counter] = self.basePoseW
+            self.baseTwistW_log[:, self.log_counter] = self.baseTwistW
+            self.q_des_log[:, self.log_counter] = self.q_des
+            self.q_log[:, self.log_counter] = self.q
+            self.qd_des_log[:, self.log_counter] = self.qd_des
+            self.qd_log[:, self.log_counter] = self.qd
+            self.tau_ffwd_log[:, self.log_counter] = self.tau_ffwd
+            self.tau_log[:, self.log_counter] = self.tau
 
-                self.time_log[self.log_counter] = self.time
-                self.log_counter += 1
-
+            self.time_log[self.log_counter] = self.time
+            self.log_counter += 1
 
     def startFramework(self):
         if self.real_robot:
@@ -173,8 +208,26 @@ class GenericSimulator(threading.Thread):
         os.system("killall rosmaster rviz gzserver gzclient")
 
         self.decimate_publish = 1
-        world_name = None #'ramps.world'
-        additional_args = ['spawn_x:=' + str(p.p0[0]),'spawn_y:=' + str(p.p0[1]),'spawn_Y:=' + str(p.p0[2]),'sensors:='+self.SENSORS, 'odometry:='+self.ODOMETRY]
+
+        ##########################################
+        world_name = 'trees.world'  # 'ramps.world'
+        # additional_args = ['spawn_x:=' + str(p.p0[0]),'spawn_y:=' + str(p.p0[1]),'spawn_Y:=' + str(p.p0[2]),'sensors:='+self.SENSORS, 'odometry:='+self.ODOMETRY, 'mapping:=true']
+
+        additional_args = [
+            'spawn_x:=' + str(p.p0[0]),
+            'spawn_y:=' + str(p.p0[1]),
+            'spawn_Y:=' + str(p.p0[2]),
+            'sensors:=' + self.SENSORS,
+            'odometry:=' + self.ODOMETRY,
+
+            # UKF-SLAM will publish map -> limo0/odom.
+            # Therefore gmapping and the static map->odom transform must be disabled.
+            'mapping:=false',
+            'publish_static_map_odom:=false',
+            'load_static_map:=false'
+        ]
+        ##########################################
+
         launch_file = rospkg.RosPack().get_path('limo_description') + '/launch/start_robot.launch'
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
@@ -196,13 +249,20 @@ class GenericSimulator(threading.Thread):
     def loadPublishers(self):
         ros.init_node(f'limo_control_node', anonymous=False, log_level=ros.FATAL)
         # instantiating objects
-        #self.ros_pub = RosPub(self.robot_name, only_visual=True)
-        self.cmd_vel_pub = ros.Publisher("/"+self.robot_name+"/cmd_vel", Twist, queue_size=1, tcp_nodelay=True)
+        # self.ros_pub = RosPub(self.robot_name, only_visual=True)
+        self.cmd_vel_pub = ros.Publisher("/" + self.robot_name + "/cmd_vel", Twist, queue_size=1, tcp_nodelay=True)
+
+        ######################################
+        if self.trilateration:
+            self.pose_pub = ros.Publisher("/pillar_localization/pose", PoseStamped, queue_size=1)
+            self.var_pub = ros.Publisher("/pillar_localization/traceP", Float64, queue_size=1)
+            self.marker_pub = ros.Publisher("/pillar_localization/marker", MarkerArray, queue_size=1)
+
+        #######################################
 
         if self.SAVE_BAGS:
             bag_name = f"log.bag"
             self.recorder = RosbagControlledRecorder(bag_name=bag_name)
-
 
     def _receive_jstate(self, msg):
         for msg_idx in range(len(msg.name)):
@@ -221,7 +281,7 @@ class GenericSimulator(threading.Thread):
         ])
 
         self.euler = np.array(euler_from_quaternion(self.quaternion))
-        #unwrap
+        # unwrap
         self.euler, self.euler_old = unwrap_vector(self.euler, self.euler_old)
 
         self.basePoseW[0] = msg.pose.pose.position.x
@@ -245,27 +305,31 @@ class GenericSimulator(threading.Thread):
         # check frequency of publishing
         if hasattr(self, 'check_time'):
             loop_time = ros.Time.now().to_sec() - self.check_time  # actual publishing time interval
-            ros_loop_time = self.slow_down_factor * conf.robot_params[p.robot_name]['dt'] * self.decimate_publish  # ideal publishing time interval
+            ros_loop_time = self.slow_down_factor * conf.robot_params[p.robot_name][
+                'dt'] * self.decimate_publish  # ideal publishing time interval
             if loop_time > 1.3 * (ros_loop_time):
                 loop_real_freq = 1 / loop_time  # actual publishing frequency
                 freq_ros = 1 / ros_loop_time  # ideal publishing frequency
-                print(colored(f"freq mismatch beyond 30%: loop is running at {loop_real_freq} Hz while it should run at {freq_ros} Hz, freq error is {(freq_ros - loop_real_freq) / freq_ros * 100} %", "red"))
+                print(colored(
+                    f"freq mismatch beyond 30%: loop is running at {loop_real_freq} Hz while it should run at {freq_ros} Hz, freq error is {(freq_ros - loop_real_freq) / freq_ros * 100} %",
+                    "red"))
                 self.out_of_frequency_counter += 1
                 if self.out_of_frequency_counter > 10:
                     original_slow_down_factor = self.slow_down_factor
                     self.slow_down_factor *= 2
                     self.rate = ros.Rate(1 / (self.slow_down_factor * conf.robot_params[p.robot_name]['dt']))
-                    print(colored(f"increasing slow_down_factor from {original_slow_down_factor} to {self.slow_down_factor}", "red"))
+                    print(colored(
+                        f"increasing slow_down_factor from {original_slow_down_factor} to {self.slow_down_factor}",
+                        "red"))
                     self.out_of_frequency_counter = 0
 
         self.check_time = ros.Time.now().to_sec()
 
     def deregister_node(self):
-        print( "deregistering nodes"     )
+        print("deregistering nodes")
         os.system(" rosnode kill /gazebo")
         os.system("pkill rosmaster")
         os.system("killall rosmaster gzserver gzclient rviz coppeliaSim")
-
 
     def startupProcedure(self):
         self.slow_down_factor = 1
@@ -274,7 +338,7 @@ class GenericSimulator(threading.Thread):
 
     def plotData(self):
         if conf.plotting:
-            #xy plot
+            # xy plot
             plt.figure()
             plt.plot(p.des_state_log[0, :], p.des_state_log[1, :], "-r", label="desired")
             plt.plot(p.state_log[0, :], p.state_log[1, :], "-b", label="real")
@@ -302,7 +366,7 @@ class GenericSimulator(threading.Thread):
             plt.ylabel("command angular velocity[rad/s]")
             plt.grid(True)
 
-            #joint velocities with limits
+            # joint velocities with limits
             fig, axs = plt.subplots(2, 1, sharex=True, figsize=(10, 8))  # Create all 3 subplots at once
             axs[0].plot(p.time_log, p.qd_log[0, :], "-b", linewidth=3)
             axs[0].plot(p.time_log, p.qd_des_log[0, :], "-r", linewidth=4)
@@ -321,10 +385,11 @@ class GenericSimulator(threading.Thread):
             plt.tight_layout()
             plt.show()
 
-            #states plot
-            plotFrameLinear(name='position',time_log=p.time_log,des_Pose_log = p.des_state_log, Pose_log=p.state_log, custom_labels=(["X","Y","THETA"]))
+            # states plot
+            plotFrameLinear(name='position', time_log=p.time_log, des_Pose_log=p.des_state_log, Pose_log=p.state_log,
+                            custom_labels=(["X", "Y", "THETA"]))
 
-            #plot velocities in the base frame
+            # plot velocities in the base frame
             # plt.figure()
             # ax1 = plt.subplot(2, 1, 1)
             # plt.plot(self.time_log, self.b_base_vel_log[0, :], "-b", label="vx")
@@ -341,7 +406,7 @@ class GenericSimulator(threading.Thread):
                 p.log_e_x, p.log_e_y, p.log_e_theta = p.controller.getErrors()
                 plt.figure()
                 plt.subplot(2, 1, 1)
-                plt.plot(np.sqrt(np.power(self.log_e_x,2) +np.power(self.log_e_y,2)), "-b")
+                plt.plot(np.sqrt(np.power(self.log_e_x, 2) + np.power(self.log_e_y, 2)), "-b")
                 plt.ylabel("exy")
                 plt.title("tracking errors")
                 plt.grid(True)
@@ -355,41 +420,44 @@ class GenericSimulator(threading.Thread):
             v = np.zeros_like(wheel_l)
             omega = np.zeros_like(wheel_l)
             for i in range(len(wheel_l)):
-                v[i] = robot_constants.SPROCKET_RADIUS*(wheel_l[i] + wheel_r[i])/2
-                omega[i] = robot_constants.SPROCKET_RADIUS/robot_constants.TRACK_WIDTH*(wheel_r[i] -wheel_l[i])
+                v[i] = robot_constants.SPROCKET_RADIUS * (wheel_l[i] + wheel_r[i]) / 2
+                omega[i] = robot_constants.SPROCKET_RADIUS / robot_constants.TRACK_WIDTH * (wheel_r[i] - wheel_l[i])
             return v, omega
 
-    def mapToWheels(self, v_des,omega_des):
+    def mapToWheels(self, v_des, omega_des):
         qd_des = np.zeros(4)
-        qd_des[0] = (v_des - omega_des * robot_constants.TRACK_WIDTH / 2) / robot_constants.SPROCKET_RADIUS  # left front
-        qd_des[1] = (v_des + omega_des * robot_constants.TRACK_WIDTH / 2) / robot_constants.SPROCKET_RADIUS  # right front
+        qd_des[0] = (
+                                v_des - omega_des * robot_constants.TRACK_WIDTH / 2) / robot_constants.SPROCKET_RADIUS  # left front
+        qd_des[1] = (
+                                v_des + omega_des * robot_constants.TRACK_WIDTH / 2) / robot_constants.SPROCKET_RADIUS  # right front
         qd_des[2] = qd_des[0].copy()
         qd_des[3] = qd_des[1].copy()
         return qd_des
 
-    def publishControlCommand(self, v_des,omega_des):
+    def publishControlCommand(self, v_des, omega_des):
         msg = Twist()
         msg.linear.x = v_des
         msg.angular.z = omega_des
         self.cmd_vel_pub.publish(msg)
 
-    #unwrap the joints states
+    # unwrap the joints states
     def unwrap(self):
         for i in range(4):
-            self.q[i], self.q_old[i] =unwrap_angle(self.q[i], self.q_old[i])
+            self.q[i], self.q_old[i] = unwrap_angle(self.q[i], self.q_old[i])
 
-    def generateWheelTraj(self, wheel_l = -4.5):
+    def generateWheelTraj(self, wheel_l=-4.5):
         ####################################
         # OPEN LOOP wl , wr (from -IDENT_MAX_WHEEL_SPEED to IDENT_MAX_WHEEL_SPEED)
         ####################################
         wheel_l_vec = []
         wheel_r_vec = []
         change_interval = 0.5
-        if wheel_l <= 0.: #this is to make such that the ID starts always with no rotational speed
-            wheel_r = np.linspace(-self.IDENT_MAX_WHEEL_SPEED, self.IDENT_MAX_WHEEL_SPEED, 32) #it if passes from 0 for some reason there is a non linear
-                #behaviour in the long slippage
+        if wheel_l <= 0.:  # this is to make such that the ID starts always with no rotational speed
+            wheel_r = np.linspace(-self.IDENT_MAX_WHEEL_SPEED, self.IDENT_MAX_WHEEL_SPEED,
+                                  32)  # it if passes from 0 for some reason there is a non linear
+            # behaviour in the long slippage
         else:
-            wheel_r =np.linspace(self.IDENT_MAX_WHEEL_SPEED, -self.IDENT_MAX_WHEEL_SPEED, 32)
+            wheel_r = np.linspace(self.IDENT_MAX_WHEEL_SPEED, -self.IDENT_MAX_WHEEL_SPEED, 32)
         time = 0
         i = 0
         while True:
@@ -403,13 +471,14 @@ class GenericSimulator(threading.Thread):
                 break
         wheel_l_vec.append(0.0)
         wheel_r_vec.append(0.0)
-        return wheel_l_vec,wheel_r_vec
+        return wheel_l_vec, wheel_r_vec
 
-    def generateOmegaTraj(self, omega_initial=0.51, omega_final=0.21, increment=0.3,  dt = 0.005, long_v = 0.1, direction="left"):
+    def generateOmegaTraj(self, omega_initial=0.51, omega_final=0.21, increment=0.3, dt=0.005, long_v=0.1,
+                          direction="left"):
         # only around 0.3
         change_interval = 1.
         increment = increment
-        ang_w_vec = np.arange(omega_initial, omega_final,increment)
+        ang_w_vec = np.arange(omega_initial, omega_final, increment)
         if direction == 'right':
             ang_w_vec *= -1
 
@@ -436,12 +505,10 @@ class GenericSimulator(threading.Thread):
         omega_vec.append(0.0)
         return v_vec, omega_vec
 
-
-    
     def monitor_time(self):
         self.checkLoopFrequency()
-        if np.mod(self.time,1) == 0:
-            print(colored(f"TIME: {self.time}","red"))
+        if np.mod(self.time, 1) == 0:
+            print(colored(f"TIME: {self.time}", "red"))
 
     def initSubscribers(self):
         self.sub_jstate = ros.Subscriber("/" + self.robot_name + "/joint_states", JointState,
@@ -449,11 +516,266 @@ class GenericSimulator(threading.Thread):
         self.sub_pose_limo = ros.Subscriber("/" + self.robot_name + "/odom", Odometry, callback=self._receive_pose,
                                             queue_size=1, tcp_nodelay=True)
 
+        #####################################
+        self.lidar_sub = ros.Subscriber("/limo0/scan", LaserScan, self.Localization, queue_size=1)
+        #####################################
+
         if self.real_robot:
-            print(colored("IMPORTANT: Real robot ON,  be sure param use_sim_time = false","red"))
+            print(colored("IMPORTANT: Real robot ON,  be sure param use_sim_time = false", "red"))
             # for limo the publisher in on limo0/odom not groundtruth
             self.p0[0], self.p0[1], self.p0[2] = getInitialStateFromOdom(self.robot_name)
             self.q_des = getInitialStateFromJoints(robot_name=self.robot_name, joint_names=self.joint_names)
+
+    ##########################################
+
+    def Localization(self, lidar_msg):
+
+        if not self.trilateration:
+            return
+
+        # =============================================================
+        # Data processing: finite readings and conversion to cartesian
+        # =============================================================
+        pointsXY = filterAndPolar2XY_LidarData(lidar_msg)
+        if pointsXY.shape[0] == 0:
+            print("No hit points")
+            return
+
+        # =======================================================
+        # Clustering with DBSCAN
+        # =======================================================
+        db = DBSCAN(eps=0.05, min_samples=3).fit(pointsXY)
+        labels = db.labels_
+        labels_set = set(labels)
+        # print(labels_set)
+
+        # ========================================================
+        # Circle fitting (least square): get pillar center
+        # Model: 2*a*x + 2*b*y + c = x^2 + y^2
+        # ========================================================
+
+        cluster_centers = []
+
+        for l in labels_set:
+            if l == -1:
+                continue
+
+            cluster = []
+            for i in range(pointsXY.shape[0]):
+                if labels[i] == l:
+                    cluster.append(pointsXY[i])
+            cluster = np.array(cluster)
+            print(f"# cluster = {len(cluster)}")
+            print(cluster)
+
+        """
+            if cluster.shape[0] < 3:  # minimum points in DBSCAN is 3
+                print("Discarded: not enough hit points")
+                continue
+
+            A = []
+            b = []
+            for k in range(cluster.shape[0]):
+                xk = cluster[k, 0]
+                yk = cluster[k, 1]
+                A.append([2.0 * xk, 2.0 * yk, 1.0])
+                b.append(xk * xk + yk * yk)
+
+            A = np.array(A)
+            b = np.array(b)
+            try:
+                p = np.linalg.solve(A.T @ A, A.T @ b)
+            except np.linalg.LinAlgError:
+                continue
+
+            # Cluster center coordinates
+            cx = p[0]
+            cy = p[1]
+            cluster_centers.append(np.array([cx, cy]))
+
+        print(f"# cluster_centers = {len(cluster_centers)}")
+
+        if len(cluster_centers) == 0:
+            print("No center found")
+            return
+
+        # ============================================
+        # Transform from lidar frame in map frame
+        # ==========================================
+
+        cluster_centers_map = []
+
+        for c in cluster_centers:
+            ps = PointStamped()
+            ps.header.frame_id = lidar_msg.header.frame_id
+            #ps.header.stamp = lidar_msg.header.stamp
+            ps.header.stamp = ros.Time(0)
+            ps.point.x = c[0]
+            ps.point.y = c[1]
+            ps.point.z = 0.0
+            try:
+                self.tf_listener.waitForTransform("map", ps.header.frame_id, ros.Time(0), ros.Duration(0.05))
+                ps_map = self.tf_listener.transformPoint("map", ps)
+                cluster_centers_map.append(np.array([ps_map.point.x, ps_map.point.y]))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
+
+        if len(cluster_centers_map) == 0:
+            print("No center in map found")
+            return
+
+        # =========================================
+        # Data association - Hungarian algorithm
+        # =========================================
+        if len(self.landmarks) == 0:
+            for i in range(len(cluster_centers_map)):
+                self.landmarks.append(cluster_centers_map[i])
+                self.landmark_ids.append(i)
+            return
+
+        n_lm = len(self.landmarks)
+        n_obs = len(cluster_centers_map)
+
+        cost = np.zeros((n_lm, n_obs))
+
+        for i in range(n_lm):
+            for j in range(n_obs):
+                dx = self.landmarks[i][0] - cluster_centers_map[j][0]
+                dy = self.landmarks[i][1] - cluster_centers_map[j][1]
+                cost[i, j] = np.sqrt(dx * dx + dy * dy)
+
+        row, col = linear_sum_assignment(cost)
+
+        associations = [-1] * n_obs
+        for k in range(len(row)):
+            if cost[row[k], col[k]] < self.max_assoc_dist:
+                associations[col[k]] = row[k]
+
+        for j in range(n_obs):
+            i = associations[j]
+            if i == -1:
+                self.landmarks.append(cluster_centers_map[j])
+                self.landmark_ids.append(len(self.landmark_ids))
+            else:
+                self.landmarks[i] = cluster_centers_map[j]
+
+        # ======================================================
+        # Trilateration (Weighted least square)
+        # ======================================================
+
+        num_pillars = len(self.landmarks)
+        if num_pillars < 2:
+            print("Less than 2 pillars detected")
+            return
+
+        ranges = []
+        used_landmarks = []
+
+        for i in range(num_pillars):
+
+            found = False
+            for j in range(len(cluster_centers_map)):
+                if associations[j] == i:
+                    xl = cluster_centers[j][0]
+                    yl = cluster_centers[j][1]
+                    r = np.sqrt(xl * xl + yl * yl)
+                    ranges.append(r)
+                    used_landmarks.append(i)
+                    # print(f"Distance lidar <-> pillar{i} = {r:.3f} m")
+                    found = True
+                    break
+            if not found:
+                continue
+
+        if len(ranges) < 2:
+            return
+
+        if not self.trilat_initialized:
+            x = np.array([0.0, 0.0])
+            self.trilat_initialized = True
+        else:
+            x = np.array(self.last_trilat)
+
+        H = []
+        z = []
+
+        for k in range(len(ranges)):
+            i = used_landmarks[k]
+            Xi = self.landmarks[i][0]
+            Yi = self.landmarks[i][1]
+
+            dx = x[0] - Xi
+            dy = x[1] - Yi
+            dist_pred = np.sqrt(dx * dx + dy * dy)
+
+            # if dist_pred < 1e-6:
+            # continue
+
+            H.append([dx / dist_pred, dy / dist_pred])
+            z.append(ranges[k] - dist_pred)
+
+        H = np.array(H)
+        z = np.array(z)
+
+        W = np.eye(len(z)) / self.R_scalar
+
+        try:
+            dx = np.linalg.solve(H.T @ W @ H, H.T @ W @ z)
+        except np.linalg.LinAlgError:
+            print("Singular matrix")
+            return
+
+        x_new = x + dx
+        self.last_trilat = [x_new[0], x_new[1]]
+
+        # sigma  0.008 is lidar uncertainty. other uncertainties introduced by dbscan and fitting
+        # error between ground truth and posebase is hovering around 10 cm
+        # sigma choose = 0.05
+
+        try:
+            gt_pos = np.array([self.basePoseW[0], self.basePoseW[1]])
+            pos_error = np.linalg.norm(x_new - gt_pos)
+
+            print(f"Error  trilateration - Ground Truth: {pos_error:.3f} m")
+
+        except Exception as e:
+            print(f"Error {e}")
+
+        P = np.linalg.inv(H.T @ W @ H)
+        var = P[0, 0] + P[1, 1]
+
+        print(f"Trilateration result: x={x_new[0]:.3f}, y={x_new[1]:.3f}, var={var:.3f}")
+
+        # ==================================================================================
+        # Visual debug: Marker in Rviz for trilateration result (it matches lidar position)
+        # ==================================================================================
+
+        m = Marker()
+        m.header.frame_id = "map"
+        m.header.stamp = ros.Time.now()
+        m.ns = "trilat_pose"
+        m.id = 0
+        m.type = Marker.CYLINDER
+        m.action = Marker.ADD
+        m.pose.position.x = x_new[0]
+        m.pose.position.y = x_new[1]
+        m.pose.position.z = 0.1
+        m.pose.orientation.w = 1.0
+        m.scale.x = 0.1
+        m.scale.y = 0.1
+        m.scale.z = 0.5
+        m.color.r = 0.0
+        m.color.g = 0.0
+        m.color.b = 0.0
+        m.color.a = 1.0
+
+        ma = MarkerArray()
+        ma.markers.append(m)
+        self.marker_pub.publish(ma)
+
+    ##########################################
+    """
+
 
 def talker(p):
     p.start()
@@ -463,6 +785,15 @@ def talker(p):
     p.initVars()
     p.initSubscribers()
     p.startupProcedure()
+
+    # print("Waiting before starting motion ")
+    if p.launch_ukf_slam:
+        launchFileNode(
+            package="loco_planning",
+            launch_file=p.ukf_slam_launch_file
+        )
+        print(colored("UKF-SLAM launch started", "green"))
+    # ros.sleep(8.0)
 
     robot_state = Robot()
     if p.real_robot:
@@ -474,13 +805,14 @@ def talker(p):
     if p.ControlType == 'OPEN_LOOP':
         counter = 0
         # generic open loop test for comparison with matlab
-        v_ol = np.linspace(0.5, 0.5, np.int32(10./conf.robot_params[p.robot_name]['dt']))
-        omega_ol = np.linspace(0., 0., np.int32(10./conf.robot_params[p.robot_name]['dt']))
+        v_ol = np.linspace(0.5, 0.5, np.int32(10. / conf.robot_params[p.robot_name]['dt']))
+        omega_ol = np.linspace(0., 0., np.int32(10. / conf.robot_params[p.robot_name]['dt']))
         traj_length = len(v_ol)
         p.des_x = p.p0[0]  # +0.1
         p.des_y = p.p0[1]  # +0.1
         p.des_theta = p.p0[2]  # +0.1
-        p.traj = Trajectory(ModelsList.UNICYCLE, p.des_x, p.des_y, p.des_theta, DT=conf.robot_params[p.robot_name]['dt'], v=v_ol, omega=omega_ol)
+        p.traj = Trajectory(ModelsList.UNICYCLE, p.des_x, p.des_y, p.des_theta,
+                            DT=conf.robot_params[p.robot_name]['dt'], v=v_ol, omega=omega_ol)
 
         while not ros.is_shutdown():
             _, _, _, p.v_d, p.omega_d, _, _, traj_finished = p.traj.evalTraj(p.time)
@@ -490,30 +822,40 @@ def talker(p):
                 break
             p.q_des = p.q_des + p.qd_des * conf.robot_params[p.robot_name]['dt']
             p.des_x, p.des_y, p.des_theta, p.v_d, p.omega_d, p.v_dot_d, p.omega_dot_d, _ = p.traj.evalTraj(p.time)
-            #note there is only a ros_impedance controller, not a joint_group_vel controller, so I can only set velocity by integrating the wheel speed and
-            #senting it to be tracked from the impedance loop
+            # note there is only a ros_impedance controller, not a joint_group_vel controller, so I can only set velocity by integrating the wheel speed and
+            # senting it to be tracked from the impedance loop
             p.monitor_time()
-            #p.ros_pub.publishVisual(delete_markers=False)
+            # p.ros_pub.publishVisual(delete_markers=False)
 
             # log variables
             p.logData()
             # wait for synconization of the control loop
             p.rate.sleep()
-            p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),  4)  # to avoid issues of dt 0.0009999
+            p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),
+                              4)  # to avoid issues of dt 0.0009999
     else:
         # CLOSE loop control
         # generate reference trajectory
-        vel_gen = VelocityGenerator(simulation_time=10.,    DT=conf.robot_params[p.robot_name]['dt'])
+        vel_gen = VelocityGenerator(simulation_time=240., DT=conf.robot_params[p.robot_name]['dt'])
         p.des_x = p.p0[0]
         p.des_y = p.p0[1]
         p.des_theta = p.p0[2]
-        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_chicane(v_max_=0.5, omega_max_=0.7)
-        p.traj = Trajectory(ModelsList.UNICYCLE, start_x=p.des_x, start_y=p.des_y, start_theta=p.des_theta, DT=conf.robot_params[p.robot_name]['dt'],
+
+        ####################################
+        # if p.trilateration:
+        v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_slam(v_max_=0.4, omega_max_=0.2)
+        # else:
+        # v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_chicane(v_max_=0.5, omega_max_=0.7)
+        #####################################
+
+        p.traj = Trajectory(ModelsList.UNICYCLE, start_x=p.des_x, start_y=p.des_y, start_theta=p.des_theta,
+                            DT=conf.robot_params[p.robot_name]['dt'],
                             v=v_ol, omega=omega_ol, v_dot=v_dot_ol, omega_dot=omega_dot_ol)
 
         # Lyapunov controller parameters
-        params = LyapunovParams(K_P=1., K_THETA=1., DT=conf.robot_params[p.robot_name]['dt']) #high gains 15 5 / low gains 10 1 (default)
-        p.controller = LyapunovController(params=params)#, matlab_engine = p.eng)
+        params = LyapunovParams(K_P=1., K_THETA=1.,
+                                DT=conf.robot_params[p.robot_name]['dt'])  # high gains 15 5 / low gains 10 1 (default)
+        p.controller = LyapunovController(params=params)  # , matlab_engine = p.eng)
 
         p.traj.set_initial_time(start_time=p.time)
         while not ros.is_shutdown():
@@ -521,30 +863,34 @@ def talker(p):
             robot_state.x = p.basePoseW[0]
             robot_state.y = p.basePoseW[1]
             robot_state.theta = p.basePoseW[5]
-            p.des_x, p.des_y, p.des_theta, p.v_d, p.omega_d, p.v_dot_d, p.omega_dot_d, traj_finished = p.traj.evalTraj(p.time)
+            p.des_x, p.des_y, p.des_theta, p.v_d, p.omega_d, p.v_dot_d, p.omega_dot_d, traj_finished = p.traj.evalTraj(
+                p.time)
             if traj_finished:
                 break
-            p.ctrl_v, p.ctrl_omega  = p.controller.control_unicycle(robot_state, p.time, p.des_x, p.des_y, p.des_theta, p.v_d, p.omega_d, traj_finished)
-            #compute qd_des after control computation
+            p.ctrl_v, p.ctrl_omega = p.controller.control_unicycle(robot_state, p.time, p.des_x, p.des_y, p.des_theta,
+                                                                   p.v_d, p.omega_d, traj_finished)
+            # compute qd_des after control computation
             p.qd_des = p.mapToWheels(p.ctrl_v, p.ctrl_omega)
 
-             # send command
+            # send command
             p.publishControlCommand(p.ctrl_v, p.ctrl_omega)
 
-            #recompute qd_des after long slippage compensation for plot
+            # recompute qd_des after long slippage compensation for plot
             p.qd_des = p.mapToWheels(p.ctrl_v, p.ctrl_omega)
             p.q_des = p.q_des + p.qd_des * conf.robot_params[p.robot_name]['dt']
             p.monitor_time()
-            #p.ros_pub.publishVisual(delete_markers=False)
+            # p.ros_pub.publishVisual(delete_markers=False)
 
             # log variables
             p.logData()
             # wait for synconization of the control loop
             p.rate.sleep()
-            p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]), 4) # to avoid issues of dt 0.0009999
+            p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),
+                              4)  # to avoid issues of dt 0.0009999
 
     if p.SAVE_BAGS:
         p.recorder.stop_recording_srv()
+
 
 if __name__ == '__main__':
     p = GenericSimulator(robotName)

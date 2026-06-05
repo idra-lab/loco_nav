@@ -8,6 +8,10 @@
   <arg name="sensors" default="true" />    <!--if true it starts lidar -->
   <arg name="teleop_control" default="false" />
   <arg name="mapping" default="false" />
+  <!-- ########################## -->
+  <arg name="publish_static_map_odom" default="true" />
+  <arg name="load_static_map" default="true" />
+  <!-- ########################## -->
   <arg name="robot_id" value="0" />
 
   <!--Simulation Parameters -->
@@ -62,8 +66,13 @@
                 <param name="publish_frequency" value="100" />
               </node>
 
+              <!--
               <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
-                args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+                args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" /> -->
+                <!-- ########################## -->
+              <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
+                if="$(arg publish_static_map_odom)" args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+                <!-- ########################## -->
         </group>
          
   </group>
@@ -78,8 +87,13 @@
               <arg name="robot_id" default="$(arg robot_id)" />
             </include>
 
+            <!--
             <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
-              args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+              args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" /> -->
+              <!-- ########################## -->
+            <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
+                if="$(arg publish_static_map_odom)" args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
+              <!-- ########################## -->
 
             <!-- publishes odom to base link-->
             <node pkg="limo_description" type="remote_bringup.sh"
@@ -109,7 +123,7 @@
   </group>
   
 	<group if="$(arg mapping)">
-	    <node pkg="gmapping" type="slam_gmapping" name="gmapping">
+	    <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="log"> <!-- output="log"=no log in terminal -->
 	    <!-- Remap laser topic -->
 	    <remap from="scan" to="/limo0/scan" />
 	    <!-- Remap odometry -->
@@ -135,15 +149,30 @@
 		<remap from="cmd_vel" to="/limo0/cmd_vel" />
 	</node>
 	</group>
-	
-	<group unless="$(arg mapping)">
+
+
+	<!--
+	<group unless="$(arg mapping)"> -->
 	        <!--MAP	SERVER: load recorded map for amcl-->
+	        <!--
 	        <node name="map_server" pkg="map_server" type="map_server" args="$(find map_pkg)/maps/real_arena.yaml" />
-
+            -->
 		<!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS and publish them-->
+		<!--
 		<node pkg="map_pkg" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen" />
+	</group> -->
 
-	</group>
+	<group unless="$(arg mapping)">
+        <group if="$(arg load_static_map)">
+            <!--MAP SERVER: load recorded map for amcl-->
+            <node name="map_server" pkg="map_server" type="map_server" args="$(find map_pkg)/maps/real_arena.yaml" />
+
+            <!-- PUBLISH OBSTACLES RETRIEVED FROM IMAGE CONTOURS and publish them-->
+            <node pkg="map_pkg" type="convert_labyrinth_map.py" name="map_extract_contours_into_obstacles" output="screen" />
+        </group>
+    </group>
+
+
 	<!-- RViz (optional) -->
 	<node pkg="rviz" type="rviz" name="rviz" if="$(arg use_rviz)" args="-d $(find limo_description)/rviz/conf_real.rviz" />
 

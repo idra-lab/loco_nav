@@ -1,0 +1,17 @@
+<launch>
+    <node pkg="loco_planning"
+          type="test_landmark_slam_ukf_node3.py"
+          name="test_landmark_slam_ukf_node"
+          output="screen">
+
+        <param name="map_frame" value="map" />
+        <param name="odom_frame" value="limo0/odom" />
+        <param name="base_frame" value="limo0/base_link" />
+
+        <param name="publish_map_to_odom" value="true" />
+
+        <param name="enable_logging" value="true" />
+        <param name="log_dir" value="/root/slam_logs" />
+
+    </node>
+</launch>
