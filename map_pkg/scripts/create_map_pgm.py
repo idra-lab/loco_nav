@@ -6,7 +6,6 @@ import cv2
 import math
 import yaml
 import rospy
-import rospkg
 import numpy as np
 
 from geometry_msgs.msg import Polygon, Point32
@@ -14,6 +13,7 @@ from obstacles_msgs.msg import ObstacleArrayMsg
 from termcolor import colored
 import subprocess
 import rospkg
+
 class CreateMap:
     def __init__(self):
         self.padding = 5

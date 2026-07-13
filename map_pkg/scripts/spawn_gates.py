@@ -7,7 +7,7 @@ import subprocess
 import rospy
 from termcolor import colored
 from geo_utility import *
-from spawn_borders import get_borders_points
+
 
 L = 1.0  # Default size for gate
 DELTA = L / 2.0 + 0.1  # 0.1 is half the border width + something

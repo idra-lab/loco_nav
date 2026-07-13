@@ -7,7 +7,7 @@
   <arg name="victims_activated" default="true" />
   <arg name="generate_new_config" default="true" />
   <arg name="start_controller" default="true" />
-  <arg name="debug" default="false" />
+  <arg name="debug" default="false" /> <!--true starts the controllers giving a default reference / false waits for the reference to be published in /limoX/ref-->
 
   <!-- Parameters -->
   <arg name="world_name" default="empty.world" />
@@ -71,9 +71,9 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_limo$(arg robot_id)_odom"
       args="0 0 0 0 0 0 map limo$(arg robot_id)/odom" />
       
-          <group if="$(arg start_controller)">
-  <node pkg="loco_planning" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
-</group>
+    <group if="$(arg start_controller)">
+        <node pkg="loco_planning" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
+    </group>
   
       
   </group>
@@ -103,8 +103,8 @@
       
       
     <group if="$(arg start_controller)">
-  <node pkg="loco_planning" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
-</group>
+         <node pkg="loco_planning" type="controller.py" name="controller" output="screen"  args="--robot_id  $(arg robot_id)  --debug $(arg debug)"/>
+    </group>
   
       
   </group>

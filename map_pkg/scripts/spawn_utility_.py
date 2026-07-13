@@ -6,7 +6,7 @@ import math
 import os
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose
-from pathlib import Path
+
 
 def load_yaml(path):
     while not os.path.exists(path):

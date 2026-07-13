@@ -8,7 +8,6 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point32
 import matplotlib
 matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 import math
 
 

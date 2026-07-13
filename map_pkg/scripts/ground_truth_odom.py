@@ -4,9 +4,6 @@ import rospy
 from gazebo_msgs.msg import ModelStates
 from nav_msgs.msg import Odometry
 from tf.broadcaster import TransformBroadcaster
-import tf
-from geometry_msgs.msg import Quaternion
-import numpy as np
 
 
 class GroundTruthOdom:
