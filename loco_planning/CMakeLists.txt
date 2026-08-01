@@ -30,6 +30,7 @@ catkin_install_python(
     scripts/planner_base.py
     # Planners - Voronoi
     scripts/planner_voronoi.py
+    scripts/unicycle.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
