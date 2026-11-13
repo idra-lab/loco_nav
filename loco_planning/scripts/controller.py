@@ -60,10 +60,15 @@ class Controller():
             (3, conf.robot_params[self.robot_name]['buffer_size']), np.nan)
 
         p0_x, p0_y, yaw0 = getInitialStateFromOdom(self.robot_name)
-        #initialize with actual state
+        #initialize desrired traj with actual state
         self.des_x = p0_x
         self.des_y = p0_y
         self.des_theta = yaw0
+
+        #EXE 3: initialize initial state of desired traj shifted from actual state
+        # self.des_x = p0_x + 0.3
+        # self.des_y = p0_y + 0.3
+        # self.des_theta = yaw0
 
         vel_gen = VelocityGenerator(simulation_time=10., DT=conf.robot_params[self.robot_name]['dt'])
         v_ol, omega_ol, v_dot_ol, omega_dot_ol, _ = vel_gen.velocity_chicane(v_max_=0.4, omega_max_=0.1)
@@ -221,50 +226,40 @@ class Controller():
         plt.plot(self.time_log, self.des_state_log[0, :], "-r", label="desired")
         plt.plot(self.time_log, self.state_log[0, :], "-b", label="real")
         plt.legend()
-        plt.xlabel("time[m]")
+        plt.xlabel("time[s]")
         plt.ylabel("x[m]")
         plt.axis("equal")
         plt.grid(True)
 
-
-        plt.title(f'{self.robot_name}')
         plt.subplot(3, 1, 2)
         plt.plot(self.time_log, self.des_state_log[1, :], "-r", label="desired")
         plt.plot(self.time_log, self.state_log[1, :], "-b", label="real")
         plt.legend()
-        plt.xlabel("time[m]")
+        plt.xlabel("time[s]")
         plt.ylabel("y[m]")
         plt.axis("equal")
         plt.grid(True)
 
-
-        plt.title(f'{self.robot_name}')
         plt.subplot(3, 1, 3)
         plt.plot(self.time_log, self.des_state_log[2, :], "-r", label="desired")
         plt.plot(self.time_log, self.state_log[2, :], "-b", label="real")
         plt.legend()
-        plt.xlabel("time[m]")
+        plt.xlabel("time[s]")
         plt.ylabel("theta[m]")
         plt.axis("equal")
         plt.grid(True)
 
 
         # tracking errors
-        # self.log_e_x, self.log_e_y, self.log_e_theta = self.controller.getErrors()
-        # plt.figure()
-        # plt.title(f'{self.robot_name}')
-        # exy = np.sqrt(np.power(self.log_e_x, 2) +
-        #               np.power(self.log_e_y, 2))
-        # plt.plot(exy, "-b")
-        # plt.ylabel("exy")
-        # plt.title("tracking error")
-        # plt.grid(True)
-        #
-        # plt.figure()
-        # plt.plot(self.log_e_theta, "-b")
-        # plt.ylabel("eth")
-        # plt.grid(True)
-        # plt.show(block=True)
+        self.log_e_x, self.log_e_y, self.log_e_theta = self.controller.getErrors()
+        plt.figure()
+        plt.title(f'{self.robot_name}')
+        exy = np.sqrt(np.power(self.log_e_x, 2) +
+                      np.power(self.log_e_y, 2))
+        plt.plot(exy, "-b")
+        plt.ylabel("exy")
+        plt.title("tracking error")
+        plt.grid(True)
 
         plt.show(block=True)
 
@@ -295,6 +290,7 @@ def str2bool(v):
 
 if __name__ == '__main__':
     main_args = parse_args()
+
     ctrl = Controller(robot_name=f"limo{main_args.robot_id}", debug=main_args.debug)
     ctrl.start_controller()
 

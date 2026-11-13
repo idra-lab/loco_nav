@@ -4,21 +4,25 @@ from utils.math_tools import unwrap_angle
 from utils.math_tools import Math
 
 class LyapunovParams:
-    def __init__(self, K_P, K_THETA, DT=0.001, ESTIMATE_ALPHA_WITH_ACTUAL_VALUES = False):
+    def __init__(self, K_P, K_THETA, DT=0.001, ESTIMATE_ALPHA_WITH_ACTUAL_VALUES = False, lyapunov_function_type="lecture"):
         self.K_P = K_P
         self.K_THETA = K_THETA
+
         self.DT = DT
+        self.lyapunov_function_type=lyapunov_function_type
 class Robot:
     pass
 
 class LyapunovController:
     def __init__(self, params: LyapunovParams): #, matlab_engine = None):
-
+        #EXE 4
+        self.K_Y = 20. #20.
         self.K_P = params.K_P
         self.K_THETA = params.K_THETA
         self.log_e_x = []
         self.log_e_y = []
         self.log_e_theta = []
+        self.lyapunov_function_type = params.lyapunov_function_type
 
         self.theta_old = 0.
         self.v_old = 0.
@@ -72,21 +76,31 @@ class LyapunovController:
         exy = math.sqrt(ex**2 + ey**2)
 
         dv = -self.K_P * exy * math.cos(psi - theta)
-        # important ! the result is 15% different for the sinc function with python from matlab
-        # domega = -self.K_THETA * etheta -v_d * np.sinc(0.5 * etheta) * exy * math.sin(psi - 0.5 * beta)
-        domega = -v_d * exy * (1/np.cos(etheta/2)) * np.sin(psi - (beta/2)) - self.K_THETA * np.sin(etheta)
+
+        if self.lyapunov_function_type=="class":
+            # this is the implementation seen in the class:
+            # V = 1 / 2 * (ex^2 + ey^2+ etheta^2)
+            # V_dot = -K_THETA * etheta^2 - K_P * exy^2 * cos(psi - theta)^2
+            # np.sinc is the NORMALIZED sinc: np.sinc(x) = sin(pi*x)/(pi*x). We need sin(etheta/2)/(etheta/2),
+            # so the argument must be divided by pi (this was the source of the ~15% mismatch with matlab which does sin(x)/x)
+            domega = - self.K_Y * v_d * np.sinc(0.5 * etheta / np.pi) * exy * math.sin(psi - 0.5 * beta) -self.K_THETA * etheta
+            # equivalent but without sinc it is undefined at etheta=0!
+            # domega =  -2/etheta * v_d * exy* np.sin(0.5 * etheta)* np.sin(psi - 0.5 * beta) - self.K_THETA * etheta
+            V = 1 / 2 * (ex ** 2 + ey ** 2 + etheta ** 2)
+            V_dot = -self.K_THETA * etheta ** 2 - self.K_P * exy ** 2 * math.pow(math.cos(psi - theta), 2)
+        else:
+            # this is the implementation implemented in the paper:
+            # V = 1 / 2  * (ex^2 + ey^2) + (1 -  cos(etheta))
+            # V_dot = -K_P * exy^2 * cos(theta - psi)^2 - K_THETA * sin(etheta)^2
+            domega = - self.K_Y * v_d * exy * (1/np.cos(etheta/2)) * np.sin(psi - (beta/2)) - self.K_THETA * np.sin(etheta)
+            V = 1 / 2 * (ex ** 2 + ey ** 2) + (1 - np.cos(etheta))
+            V_dot = -self.K_P * (exy ** 2) * (np.cos(theta - psi) ** 2) - self.K_THETA * (np.sin(etheta) ** 2)
 
         v = v_d + dv
         omega = omega_d + domega
 
-        # V = 1 / 2 * (ex ** 2 + ey ** 2+ etheta**2)
-        # V_dot = -self.K_THETA * etheta**2  - self.K_P * exy * math.pow(math.cos(psi - theta),2)
-        V = 1 / 2 * (ex ** 2 + ey ** 2) + (1 - np.cos(etheta))
-        V_dot = -self.K_P * (exy ** 2) * (np.cos(theta - psi) ** 2) - self.K_THETA * (np.sin(etheta) ** 2)
 
-        #domega = - self.K_THETA * etheta - 2/etheta * v_d * np.sin(0.5 * etheta)* np.sin(psi - 0.5 * beta)
         # save errors for plotting
-
         self.log_e_x.append(ex)
         self.log_e_y.append(ey)
         self.log_e_theta.append(etheta)

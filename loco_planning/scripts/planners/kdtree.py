@@ -236,7 +236,7 @@ if __name__ == "__main__":
     plt.grid(True)
     # # Build tree and find nearest neighbor: custom implem
     kdtree = KDTree()
-    tree = kdtree.build_kdtree(points, bounds=(0, 10, 0, 10), debug=False)
+    tree = kdtree.build_kdtree(points, bounds=(0, 10, 0, 10), debug=True)
     nearest, radius = kdtree.nearest_neighbor(query,tree)
     print(f"CUSTOM: Nearest to {query} is {nearest}")
 
